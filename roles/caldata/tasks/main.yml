@@ -1,0 +1,148 @@
+---
+# Extract the QCA9887 (5 GHz) per-device calibration data from the factory `art`
+# partition and install it where ath10k_pci looks for it.
+#
+# WHY THIS ROLE EXISTS
+#
+# On a stock OpenWrt build for this board the 5 GHz radio never initialises:
+#
+#   ath10k_pci 0000:00:00.0: failed to read calibration data from EEPROM: -22
+#   ath10k_pci 0000:00:00.0: could not init core (-22)
+#   ath10k_pci 0000:00:00.0: could not probe fw (-22)
+#
+# Two independent reasons, both fixed here:
+#
+#  1. /lib/firmware/ath10k/QCA9887/hw1.0/board.bin ships as the GENERIC default.
+#     Its embedded MAC is the placeholder 00:03:7f:12:34:56, not this unit's — so
+#     it cannot calibrate this radio.
+#  2. The build's /etc/hotplug.d/firmware/10-ath9k-eeprom has NO ath10k case (its
+#     only board case is `meraki,mr18`), so nothing ever extracts art@0x5000.
+#
+# The factory calibration data is INTACT in art. We only read it.
+#
+# SAFETY: this role NEVER writes to the art partition. It is read-only on art and
+# writes only to /lib/firmware and /etc/hotplug.d, both on the overlay.
+
+- name: Verify we are on the expected board and that art exists
+  ansible.builtin.assert:
+    that:
+      - art_partition | length > 0
+      - qca9887_cal_offset | length > 0
+      - qca9887_cal_length | length > 0
+    fail_msg: >-
+      caldata role needs art_partition, qca9887_cal_offset and qca9887_cal_length
+      set (see roles/caldata/defaults/main.yml).
+
+- name: Read the board model
+  ansible.builtin.slurp:
+    src: /tmp/sysinfo/board_name
+  register: board_name_raw
+  failed_when: false
+
+- name: Report board identity
+  ansible.builtin.debug:
+    msg: >-
+      board={{ (board_name_raw.content | default('') | b64decode | trim)
+                if board_name_raw is succeeded else 'unknown' }}
+
+- name: Refuse unsupported board
+  ansible.builtin.assert:
+    that:
+      - "'gl-e750' in (board_name_raw.content | b64decode | lower)"
+    fail_msg: >-
+      This role targets the GL.iNet GL-E750 (board name glinet,gl-e750). Found:
+      {{ board_name_raw.content | b64decode | trim | default('unknown') }}.
+      Calibration offsets are board-specific — do not run this on another model.
+    success_msg: "board is GL-E750 — calibration offsets apply"
+  when: board_name_raw is succeeded
+
+# ── Extract the caldata to a scratch path and validate it BEFORE installing ────
+
+- name: Read the QCA9887 calibration blob out of the art partition
+  ansible.builtin.command:
+    argv:
+      - dd
+      - "if=/dev/mtdblock-{{ art_partition }}"
+      - "of={{ caldata_tmp }}"
+      - "bs=1"
+      - "skip={{ qca9887_cal_offset | int(base=0) }}"
+      - "count={{ qca9887_cal_length | int(base=0) }}"
+  vars:
+    caldata_tmp: "/tmp/e750-qca9887-cal.bin"
+  register: dd_result
+  changed_when: false
+  failed_when: dd_result.rc != 0
+  # /dev/mtdblock-<name> may not exist on all builds; fall back to the chardev
+  ignore_errors: true
+
+- name: Extract via the mtd chardev when the block device is absent
+  ansible.builtin.shell: |
+    set -eu
+    MTD=$(grep -w '"{{ art_partition }}"' /proc/mtd | cut -d: -f1)
+    [ -n "$MTD" ] || { echo "no mtd named {{ art_partition }}" >&2; exit 1; }
+    dd if=/dev/"$MTD" of=/tmp/e750-qca9887-cal.bin \
+       bs=1 skip={{ qca9887_cal_offset | int(base=0) }} count={{ qca9887_cal_length | int(base=0) }} 2>/dev/null
+    echo "extracted from /dev/$MTD"
+  register: extract_result
+  changed_when: false
+  when: dd_result is failed or not (dd_result.stdout is defined)
+
+# ── Validate: refuse to install a blob that is not this unit's calibration ─────
+
+- name: Read the extracted blob's first bytes
+  ansible.builtin.command: "hexdump -C -n 16 /tmp/e750-qca9887-cal.bin"
+  register: cal_head
+  changed_when: false
+
+- name: Assert the blob carries a real QCA9887 calibration header
+  ansible.builtin.assert:
+    that:
+      - qca9887_cal_magic_hex in (cal_head.stdout | replace(' ', ''))
+    fail_msg: >-
+      Extracted caldata does NOT start with the expected QCA9887 magic
+      ({{ qca9887_cal_magic_hex }}). Got: {{ cal_head.stdout }}.
+      The art partition may be wiped — STOP and investigate rather than
+      installing a blob that would keep the radio dead.
+
+- name: Assert the blob is not the generic placeholder board data
+  ansible.builtin.assert:
+    that:
+      - "'70313233343536' not in (cal_head.stdout | replace(' ', ''))"
+    fail_msg: >-
+      Extracted blob contains the placeholder MAC {{ forbidden_placeholder_mac }}.
+      That is the GENERIC board.bin, not this unit's calibration. Refusing.
+
+# ── Install ───────────────────────────────────────────────────────────────────
+
+- name: Ensure the ath10k firmware directory exists
+  ansible.builtin.file:
+    path: "{{ ath10k_fw_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Install the per-device calibration where ath10k probes for it
+  ansible.builtin.copy:
+    src: /tmp/e750-qca9887-cal.bin
+    dest: "{{ ath10k_fw_dir }}/{{ item }}"
+    remote_src: true
+    mode: "0644"
+  loop: "{{ ath10k_cal_names }}"
+
+# ── Persist across reboot: hotplug handler re-extracts if the file ever vanishes ─
+
+- name: Ensure the firmware hotplug directory exists
+  ansible.builtin.file:
+    path: "{{ hotplug_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Install the ath10k caldata hotplug handler
+  ansible.builtin.copy:
+    src: 11-ath10k-caldata
+    dest: "{{ hotplug_dir }}/{{ hotplug_script }}"
+    mode: "0755"
+
+- name: Remove the scratch blob
+  ansible.builtin.file:
+    path: /tmp/e750-qca9887-cal.bin
+    state: absent

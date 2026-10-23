@@ -1,0 +1,48 @@
+---
+# ─────────────────────────────────────────────────────────────────────────────
+# GL-E750 (Mudi) — calibration / art layout
+#
+# All offsets below were READ BACK FROM THE DEVICE (mtd2 = "art", 64 KiB), not
+# guessed. The board is a dual-radio ath79 design: AR9531 2.4 GHz (ath9k, AHB)
+# plus QCA9887 5 GHz (ath10k, PCIe).
+#
+#   art@0x1000  len 0x440   ath9k 2.4 GHz caldata   (MAC 94:83:c4:4d:fc:39)
+#   art@0x5000  len 0x440   QCA9887 5 GHz caldata   (MAC 94:83:c4:4d:fc:3a)
+#   art@0x9000              empty on this unit (0xff fill)
+#
+# The 5 GHz blob's header is 44 08 1b a8 04 01 — a QCA9887 calibration header.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# mtd partition that holds factory calibration. NEVER written to by this repo.
+art_partition: "art"
+
+# QCA9887 calibration data location inside art
+qca9887_cal_offset: "0x5000"
+qca9887_cal_length: "0x440"
+
+# Sanity header the QCA9887 caldata must start with. Used to refuse a bad extract
+# rather than installing garbage that would keep the radio dead.
+qca9887_cal_magic: "44081ba804 01"
+qca9887_cal_magic_hex: "44081ba80401"
+
+# Where ath10k looks for per-device calibration. The kernel requests BOTH names
+# depending on version:
+#   pre-cal-pci-<BDF>.bin   (ath10k, pre-calibration blob)
+#   cal-pci-<BDF>.bin       (ath10k, calibration blob)
+# We materialise both so either probe path succeeds.
+ath10k_bdf: "0000:00:00.0"
+ath10k_fw_dir: "/lib/firmware/ath10k/QCA9887/hw1.0"
+ath10k_cal_names:
+  - "pre-cal-pci-{{ ath10k_bdf }}.bin"
+  - "cal-pci-{{ ath10k_bdf }}.bin"
+
+# Hotplug handler that re-extracts the caldata after any future firmware/sysupgrade
+# (the extraction lives on the overlay; a sysupgrade preserving config keeps it).
+hotplug_dir: "/etc/hotplug.d/firmware"
+hotplug_script: "11-ath10k-caldata"
+
+# Refuse to proceed unless the extracted MAC looks like this unit's real MAC family.
+# The shipping board.bin carries the PLACEHOLDER 00:03:7f:12:34:56 — installing
+# that is exactly the bug we are fixing, so we assert against it.
+expected_mac_prefix: "94:83:c4:4d:fc:"
+forbidden_placeholder_mac: "00:03:7f:12:34:56"

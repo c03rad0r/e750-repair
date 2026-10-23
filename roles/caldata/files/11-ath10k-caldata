@@ -1,0 +1,39 @@
+#!/bin/sh
+# /etc/hotplug.d/firmware/11-ath10k-caldata
+#
+# Re-extract the QCA9887 (5 GHz) per-device calibration from the factory `art`
+# partition whenever the kernel asks for a calibration blob that is not present.
+#
+# WHY: the stock /etc/hotplug.d/firmware/10-ath9k-eeprom only handles ath9k and
+# has NO ath10k case, so on this board the QCA9887 never receives its per-device
+# calibration and ath10k_pci fails with:
+#
+#   failed to read calibration data from EEPROM: -22
+#   could not init core (-22)
+#
+# This handler closes that gap. It is the reboot-surviving half of the fix; the
+# caldata role also installs the blob immediately so no reboot is required.
+#
+# Idempotent by construction: the first line exits as soon as the requested
+# firmware is already present.
+#
+# READ-ONLY on art: caldata_extract only reads the partition.
+
+[ -e /lib/firmware/$FIRMWARE ] && exit 0
+
+. /lib/functions/caldata.sh
+
+ART_PART="${ART_PART:-art}"
+CAL_OFF="${CAL_OFF:-0x5000}"
+CAL_LEN="${CAL_LEN:-0x440}"
+
+case "$FIRMWARE" in
+  ath10k/pre-cal-pci-0000:00:00.0.bin|ath10k/cal-pci-0000:00:00.0.bin)
+    # caldata_extract <partition> <offset> <length>
+    # (signature verified against /lib/functions/caldata.sh on the target)
+    caldata_extract "$ART_PART" "$CAL_OFF" "$CAL_LEN"
+    ;;
+  *)
+    exit 0
+    ;;
+esac

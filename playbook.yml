@@ -1,0 +1,32 @@
+---
+# GL-E750 radio repair — the one command.
+#
+#   ansible-playbook -i inventory/hosts.yml playbook.yml
+#
+# Idempotent: a second run reports changed=0 for the settled state.
+#
+# Evidence, not recap: this playbook ends with the `verify` role, which reads the
+# device back (dmesg + wifi status) and FAILS if ath10k still reports a
+# calibration error. A green play that leaves the radio dead is impossible.
+
+- name: GL-E750 — QCA9887 calibration + radio enablement
+  hosts: e750
+  gather_facts: true
+  become: false          # the OpenWrt console is already root
+  any_errors_fatal: true
+
+  tasks:
+    - name: Stage 1 — install per-device 5 GHz calibration
+      ansible.builtin.include_role:
+        name: caldata
+      when: run_caldata | bool
+
+    - name: Stage 2 — radio configuration
+      ansible.builtin.include_role:
+        name: radio
+      when: run_radio | bool
+
+    - name: Stage 3 — verify from the device
+      ansible.builtin.include_role:
+        name: verify
+      when: run_verify | bool

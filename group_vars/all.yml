@@ -1,0 +1,32 @@
+---
+# Everything that varies is a variable; nothing here is hardcoded in a task.
+# Override per-run with -e, or per-host in inventory/host_vars/.
+
+# ── Identity ─────────────────────────────────────────────────────────────────
+device_model: "GL.iNet GL-E750 (Mudi)"
+device_soc: "Qualcomm Atheros QCA9533 (AR9531 2.4 GHz + QCA9887 5 GHz)"
+device_serial_port: "/dev/ttyUSB3"   # FTDI BH00DL3M on the Hermes bench host
+device_serial_baud: 115200
+
+# ── Stages ───────────────────────────────────────────────────────────────────
+# caldata is the repair; radio/verify are configuration + evidence.
+run_caldata: true
+run_radio: true
+run_verify: true
+
+# ── Radio configuration ──────────────────────────────────────────────────────
+# Default is deliberately SAFE: repair the radio, do NOT silently open an AP with
+# a guessed SSID. Set configure_wifi=true and pass wifi_ssid to enable it.
+configure_wifi: false
+wifi_enabled: true
+wifi_ssid: "e750"
+wifi_encryption: "none"    # set to psk2 when wifi_key is provided
+wifi_key: ""
+
+# Assert the 5 GHz radio is present. Turn off only when you deliberately want a
+# 2.4 GHz-only unit.
+expect_5ghz_radio: true
+
+# ── Network (for the optional SSH transport) ─────────────────────────────────
+lan_ip: "192.168.1.1"
+lan_netmask: "24"

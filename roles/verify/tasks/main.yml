@@ -1,0 +1,51 @@
+---
+# Post-fix verification. This role is the evidence generator: every check is a
+# READ-BACK from the device, never an assumption from the play recap.
+
+- name: Read ath10k messages
+  ansible.builtin.shell: "dmesg | grep -i ath10k | tail -20 || true"
+  register: ath10k_dmesg
+  changed_when: false
+
+- name: Read wireless status
+  ansible.builtin.command: wifi status
+  register: wifi_st
+  changed_when: false
+  failed_when: false
+
+- name: Read the installed calibration files
+  ansible.builtin.shell: "ls -l {{ ath10k_fw_dir }}/ || true"
+  register: fw_ls
+  changed_when: false
+
+- name: Show the verification evidence
+  ansible.builtin.debug:
+    msg:
+      - "=== ath10k dmesg ==="
+      - "{{ ath10k_dmesg.stdout_lines }}"
+      - "=== firmware dir ==="
+      - "{{ fw_ls.stdout_lines }}"
+      - "=== wifi status ==="
+      - "{{ wifi_st.stdout_lines }}"
+
+# The decisive assertion: the -22 caldata failure must be GONE.
+- name: Assert ath10k no longer fails to read calibration
+  ansible.builtin.assert:
+    that:
+      - "'failed to read calibration data' not in ath10k_dmesg.stdout"
+      - "'could not init core (-22)' not in ath10k_dmesg.stdout"
+      - "'could not probe fw (-22)' not in ath10k_dmesg.stdout"
+    fail_msg: >-
+      ath10k still reports a calibration failure. The installed caldata did not
+      take effect. Check that {{ ath10k_fw_dir }} contains the cal-pci blob and
+      that its header matches {{ qca9887_cal_magic_hex }}.
+    success_msg: "ath10k initialised without a calibration error"
+
+- name: Assert the 5 GHz radio is enumerated
+  ansible.builtin.assert:
+    that:
+      - (wifi_st.stdout | from_json | length) >= 2
+    fail_msg: >-
+      Expected TWO radios (2.4 GHz ath9k + 5 GHz QCA9887), got
+      {{ wifi_st.stdout | from_json | length }}. 5 GHz still not up.
+    success_msg: "both radios enumerated"

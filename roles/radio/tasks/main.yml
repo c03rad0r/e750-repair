@@ -1,0 +1,73 @@
+---
+# Bring the E750's radios into a usable state.
+#
+# On a freshly installed image BOTH radios ship disabled with the default SSID
+# "OpenWrt" and no encryption:
+#
+#   wireless.radio0.disabled='1'          (AR9531 2.4 GHz, ath9k)
+#   wireless.default_radio0.disabled='1'  (the AP iface on radio0)
+#   (5 GHz radio is absent entirely until caldata is fixed — see role `caldata`)
+#
+# This role asserts the radio inventory and, when asked, enables the APs with a
+# caller-supplied SSID. It deliberately does NOT invent a password: an open AP is
+# a lab default, and a real deployment should pass `wifi_key`.
+
+# What radios does the device actually expose right now?
+- name: Read the wireless status
+  ansible.builtin.command: wifi status
+  register: wifi_status_raw
+  changed_when: false
+  failed_when: false
+
+- name: Parse the radio inventory
+  ansible.builtin.set_fact:
+    radios_present: >-
+      {{ (wifi_status_raw.stdout | from_json).keys() | list
+         if (wifi_status_raw.stdout | default('') | trim).startswith('{') else [] }}
+
+- name: Report the radio inventory
+  ansible.builtin.debug:
+    msg: "radios present: {{ radios_present | default([]) }}"
+
+- name: Assert the 5 GHz radio came up
+  ansible.builtin.assert:
+    that:
+      - expect_5ghz_radio | bool implies (radios_present | length >= 2)
+    fail_msg: >-
+      Only {{ radios_present | length }} radio(s) present ({{ radios_present }}).
+      The 5 GHz QCA9887 is still not initialising — check
+      `dmesg | grep ath10k`. If it shows -22, the caldata role did not take.
+    success_msg: "both radios present ({{ radios_present | join(', ') }})"
+
+- name: Enable the 2.4 GHz AP
+  ansible.builtin.command:
+    argv:
+      - uci
+      - set
+      - "wireless.default_radio0.disabled={{ '0' if wifi_enabled | bool else '1' }}"
+  changed_when: true
+  when: configure_wifi | bool
+
+- name: Set the SSID
+  ansible.builtin.command:
+    argv: [uci, set, "wireless.default_radio0.ssid={{ wifi_ssid }}"]
+  changed_when: true
+  when: configure_wifi | bool
+
+- name: Set encryption when a key was supplied
+  ansible.builtin.command:
+    argv: [uci, set, "wireless.default_radio0.encryption={{ wifi_encryption }}"]
+  changed_when: true
+  when:
+    - configure_wifi | bool
+    - wifi_key | length > 0
+
+- name: Commit wireless config
+  ansible.builtin.command: uci commit wireless
+  changed_when: true
+  when: configure_wifi | bool
+
+- name: Apply the wireless config
+  ansible.builtin.command: wifi reload
+  changed_when: true
+  when: configure_wifi | bool
