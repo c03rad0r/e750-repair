@@ -1,21 +1,26 @@
 # e750-repair
 
-Repair and configure a **GL.iNet GL-E750 ("Mudi")** over its serial console —
-reproducibly, as Ansible, so any context window or machine can do it.
+Tooling to diagnose and repair a **GL.iNet GL-E750 ("Mudi")** over its serial
+console — reproducibly, as Ansible, so any context window or machine can do it.
 
-The headline job: **bring the dead 5 GHz radio back up** by installing the
-per-device QCA9887 calibration data that a stock OpenWrt image never extracts.
+> ## ⚠️ READ [`STATUS.md`](STATUS.md) FIRST
+>
+> This repo was written during an active diagnosis and **its central claim is
+> unverified and probably wrong**. The theory that installing missing QCA9887
+> calibration data revives the dead 5 GHz radio **did not survive contact with the
+> hardware** — the driver rejects the *board file* (`failed to get board id: -122`)
+> before it ever applies per-device calibration, so calibration cannot be the cause.
+>
+> **Do not treat the `caldata` role as a fix.** It is a kept-but-unproven
+> hypothesis. What IS solid and reusable here: the serial transport plugin, the
+> verify role that refuses to report a false pass, and the measured
+> troubleshooting notes. See STATUS.md for the full evidence/claim split.
 
-```bash
-ansible-playbook -i inventory/hosts.yml playbook.yml
-```
-
-That is the whole procedure. It is idempotent, it reads the device back to prove
-the result, and it never writes to the factory `art` partition.
+The radio repair itself remains **unsolved**.
 
 ---
 
-## The fault this fixes
+## The fault this was *intended* to fix (theory — see STATUS.md)
 
 A stock OpenWrt image on this board boots fine but the 5 GHz radio never
 initialises:

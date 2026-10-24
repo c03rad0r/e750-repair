@@ -1,6 +1,14 @@
 ---
-# Extract the QCA9887 (5 GHz) per-device calibration data from the factory `art`
-# partition and install it where ath10k_pci looks for it.
+# ⚠️ UNPROVEN HYPOTHESIS — READ STATUS.md BEFORE TRUSTING THIS ROLE.
+#
+# This role installs the factory QCA9887 calibration data from `art`. On the target
+# unit that did NOT revive the 5 GHz radio: ath10k rejects the BOARD FILE
+# (`failed to get board id: -122`) before it ever applies per-device calibration,
+# so a calibration problem cannot explain that failure ordering.
+#
+# The extraction logic is sound and may be a necessary step once the real cause is
+# found, but it is demonstrably NOT sufficient. Treat this as an experiment, not a
+# fix.
 #
 # WHY THIS ROLE EXISTS
 #
@@ -10,7 +18,7 @@
 #   ath10k_pci 0000:00:00.0: could not init core (-22)
 #   ath10k_pci 0000:00:00.0: could not probe fw (-22)
 #
-# Two independent reasons, both fixed here:
+# Two candidate reasons this role addresses (neither proven to be THE cause):
 #
 #  1. /lib/firmware/ath10k/QCA9887/hw1.0/board.bin ships as the GENERIC default.
 #     Its embedded MAC is the placeholder 00:03:7f:12:34:56, not this unit's — so
