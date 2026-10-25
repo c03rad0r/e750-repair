@@ -191,6 +191,36 @@ immediately after it. This is a hypothesis with a mechanism, not a finding.
   (`firmware ver 10.1-ct-87`, driver `ath10k 6.15`). Line-for-line agreement with
   the OpenWrt build was not verified.
 
+### BOARD CONSTRAINT — which hardware can test the −122 at all (measured 2026-10-25)
+
+**The −122 can only be reproduced on this E750. No other board on the bench can
+produce it, because the signal lives in `ath10k`'s BMI protocol and the other
+bench boards do not use `ath10k`.**
+
+Measured on the bench host by counting BMI symbols in the shipped modules:
+
+```
+mt76.ko          BMI_PARAM|bmi_get_target_info|bmi_execute -> 0
+mt7915e.ko       -> 0        (MT7918/MT7986-class 5 GHz, used by GL-MT3000)
+mt7996e.ko       -> 0
+ath10k_core.ko   -> 1        (GET_EEPROM_BOARD_ID / GET_FLASH_BOARD_ID present)
+```
+
+`failed to get board id`, `BMI_PARAM_GET_FLASH_BOARD_ID` and the whole
+`ath10k_bmi_execute()` path are **ath10k-only**. `mt76` has no BMI layer at all,
+so:
+
+- **GL-MT3000 (MediaTek MT7986, `mt76`)** — cannot reproduce the −122. It is a
+  control for "does a 5 GHz radio come up on other hardware", **not** a test of
+  this lead.
+- **COMFAST CF-WR632AX (MediaTek MT7981, `mt76`)** — same, cannot reproduce it.
+- **D-Link COVR-X1860 (ramips/mt7621)** — different target and radio stack again;
+  it was never offered for this work and was only identity-read.
+
+**Consequence: the one-variable file-placement experiment MUST run on the E750.**
+Do not dispatch it to another board — a green result there would be
+uninformative, because the code path under test does not exist on that board.
+
 ## 4. `art` holds valid calibration
 
 ```
