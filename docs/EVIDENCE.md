@@ -48,7 +48,14 @@ br-lan       7fff.9483c44dfc38  no           eth0
 The address is correct; a down port carries no frames. This is why `192.168.1.1`
 was unreachable.
 
-## 3. The 5 GHz radio fails calibration
+## 3. The 5 GHz radio fails — and the failure CHANGED after caldata was installed
+
+**This is the most important section in the repo.** There are two distinct failure
+signatures and the difference between them is the current lead.
+
+### 3a. Boot before any caldata was installed (2026-10-23 04:43)
+
+Log: `~/reports/e750/ttyUSB3.log`. **No `-122` in this log** (`grep -c -- '-122'` = 0).
 
 ```
 ath10k_pci 0000:00:00.0: qca9887 hw1.0 target 0x4100016d chip_id 0x004000ff sub 0000:0000
@@ -63,6 +70,126 @@ ath10k_pci 0000:00:00.0: could not probe fw (-22)
 ```
 
 `-22` = `-EINVAL`, on the *calibration download* step specifically.
+
+### 3b. Boot AFTER caldata was installed (2026-10-23 15:14 and 17:23)
+
+Logs: `~/reports/e750/poweron2/ttyUSB3.log`, `~/reports/e750/reboot_trigger.log`.
+**Both contain `-122`** (`grep -c -- '-122'` = 1 in each).
+
+```
+ath10k_pci 0000:00:00.0: qca9887 hw1.0 target 0x4100016d chip_id 0x004000ff sub 0000:0000
+ath10k_pci 0000:00:00.0: kconfig debug 0 debugfs 1 tracing 0 dfs 1 testmode 0
+ath10k_pci 0000:00:00.0: firmware ver 10.1-ct-87-__fW-022-d8dab8e8 api 2 ... crc32 81827605
+ath10k_pci 0000:00:00.0: board_file api 1 bmi_id N/A crc32 546cca0d
+ath10k_pci 0000:00:00.0: failed to get board id: -122          <-- NEW
+ath10k_pci 0000:00:00.0: failed to read device EEPROM at 0000
+ath10k_pci 0000:00:00.0: failed to read calibration data from EEPROM: -22
+ath10k_pci 0000:00:00.0: otp calibration failed: 2
+ath10k_pci 0000:00:00.0: failed to run otp: -22 (download-cal-data)
+ath10k_pci 0000:00:00.0: could not init core (-22)
+ath10k_pci 0000:00:00.0: could not probe fw (-22)
+```
+
+### Why `-122` is a lead, not noise
+
+`-122` is `-EDQUOT`. **`-EDQUOT` appears nowhere in the ath10k driver** — no
+ath10k function can return it. So the number must be a *value* crossing a
+boundary that the driver treats as an errno: `ath10k_bmi_execute()` hands back
+`resp.execute.result` verbatim, and the firmware is returning `-EDQUOT` for a
+request it will not serve.
+
+That value reaches the log through `ath10k_core_get_board_id_from_otp()`:
+
+```c
+ret = ath10k_bmi_execute(ar, address, bmi_board_id_param, &result);
+if (ret) {
+        ath10k_err(ar, "could not execute otp for board id check: %d\n", ret);  /* NOT in our log */
+        return ret;
+}
+...
+ath10k_dbg(ar, ATH10K_DBG_BOOT, "boot get otp board id result 0x%08x ...");      /* NOT in our log */
+```
+
+Neither the `could not execute` error nor the `boot get otp board id result` debug
+line appears — consistent with `ret == 0` and the query running to completion,
+then a *later* step failing with −122. The candidate is
+`ath10k_download_board_data()`: `ath10k_bmi_read32(ar, hi_board_data, ...)` reads
+through `ath10k_bmi_read_memory()`, whose loop has no lower-bound guard —
+
+```c
+while (length) {
+        rxlen = min_t(u32, length, BMI_MAX_DATA_SIZE);
+        ret = ath10k_hif_exchange_bmi_msg(ar, &cmd, cmdlen, &resp, &rxlen);
+        ...
+        length -= rxlen;    /* a short read underflows this to ~4G */
+}
+```
+
+A short read underflows `length` to `0xFFFFFFFC` and spins the loop far past the
+intended window. Notably the surrounding error prints (`failed to download board
+data`, `could not push board ext data`) are **absent**, so whatever failed did so
+on a path that logs only this one line:
+
+```c
+ret = ath10k_core_get_board_id_from_otp(ar);
+if (ret) {
+        ath10k_err(ar, "failed to get board id: %d\n", ret);   /* <-- our line */
+        return ret;
+}
+```
+
+`ar->id.bmi_ids_valid` consequently stays false, which changes the *value* of the
+next call: `ath10k_download_and_run_otp()` chooses `BMI_PARAM_GET_FLASH_BOARD_ID`
+(or `otp_exe_param`) instead of `BMI_PARAM_FLASH_SECTION_ALL`, uploads less, and
+the target then rejects with `result = 2` → `otp calibration failed: 2`.
+
+**Conclusion: `otp calibration failed: 2` is a *symptom* of the −122 path, not
+evidence about calibration validity.** Any argument that reasons from that line's
+position in the log to "calibration cannot be the cause" is invalid.
+
+### What changed between 3a and 3b
+
+Between the two boots, two files were placed (see `~/reports/e750/fix_paths.py`,
+2026-10-23 15:37):
+
+```
+nested:     /lib/firmware/ath10k/QCA9887/hw1.0/pre-cal-pci-0000:00:00.0.bin
+top-level:  /lib/firmware/ath10k/cal-pci-0000:00:00.0.bin
+```
+
+Per `ath10k_fetch_cal_file()` (`drivers/net/wireless/ath/ath10k/core.c`) the driver
+probes `pre-cal-<bus>-<id>.bin` first, then `cal-<bus>-<id>.bin`, in **both** the
+nested and top-level directories. Finding a `pre-cal-*` file sets
+`ar->cal_mode = ATH10K_PRE_CAL_MODE_FILE`, and that value is read in
+`ath10k_core_get_board_id_from_otp()` to pick which BMI parameter to send:
+
+```c
+if (ar->cal_mode == ATH10K_PRE_CAL_MODE_DT ||
+    ar->cal_mode == ATH10K_PRE_CAL_MODE_FILE ||
+    ar->cal_mode == ATH10K_PRE_CAL_MODE_NVMEM)
+        bmi_board_id_param = BMI_PARAM_GET_FLASH_BOARD_ID;
+else
+        bmi_board_id_param = BMI_PARAM_GET_EEPROM_BOARD_ID;
+```
+
+So installing those files plausibly *switched the BMI query* the target is asked
+to serve — and the −122 appears in exactly the boots where they were present.
+
+**NOT PROVEN.** Which boot saw which file tree is not established from the
+captured logs, and the two boots are ~23 min after the 15:37 copy rather than
+immediately after it. This is a hypothesis with a mechanism, not a finding.
+
+### Not established / traps
+
+- The `-122` must never be read as "the driver complained about quota". It is a
+  firmware-returned value surfacing through the errno channel.
+- Do **not** delete this section on the grounds that "caldata is unverified" —
+  the −122 only exists *because* of the file placement, which is why it is the
+  lead rather than a discarded claim.
+- The write-up of this diagnosis is based on upstream driver source read on
+  2026-10-25, not on the exact ath10k revision in this firmware
+  (`firmware ver 10.1-ct-87`, driver `ath10k 6.15`). Line-for-line agreement with
+  the OpenWrt build was not verified.
 
 ## 4. `art` holds valid calibration
 

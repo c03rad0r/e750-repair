@@ -6,15 +6,20 @@ console — reproducibly, as Ansible, so any context window or machine can do it
 > ## ⚠️ READ [`STATUS.md`](STATUS.md) FIRST
 >
 > This repo was written during an active diagnosis and **its central claim is
-> unverified and probably wrong**. The theory that installing missing QCA9887
-> calibration data revives the dead 5 GHz radio **did not survive contact with the
-> hardware** — the driver rejects the *board file* (`failed to get board id: -122`)
-> before it ever applies per-device calibration, so calibration cannot be the cause.
+> unverified**. The theory that installing missing QCA9887 calibration data revives
+> the dead 5 GHz radio **did not fix the radio**. Worse, placing the files **changed
+> the failure**: a `failed to get board id: -122` line now appears that is absent
+> from every pre-install boot log.
 >
-> **Do not treat the `caldata` role as a fix.** It is a kept-but-unproven
-> hypothesis. What IS solid and reusable here: the serial transport plugin, the
-> verify role that refuses to report a false pass, and the measured
-> troubleshooting notes. See STATUS.md for the full evidence/claim split.
+> An earlier version of this README argued from the log ordering that "calibration
+> cannot be the cause". **That argument has been retracted as invalid** — the two
+> lines come from different driver calls with independent base errors, so their
+> order proves nothing. See STATUS.md.
+>
+> **Do not treat the `caldata` role as a fix.** Its side effects are not yet
+> understood, and it is itself the current lead. What IS solid and reusable here:
+> the serial transport plugin, the verify role that refuses to report a false pass,
+> and the measured troubleshooting notes.
 
 The radio repair itself remains **unsolved**.
 
@@ -35,7 +40,9 @@ ath10k_pci 0000:00:00.0: could not init core (-22)
 ath10k_pci 0000:00:00.0: could not probe fw (-22)
 ```
 
-`-22` is `-EINVAL`. Two independent causes, both fixed here:
+`-22` is `-EINVAL`. Two candidate causes were identified, but **neither is
+confirmed and the second one changed the failure rather than fixing it** — see
+[`STATUS.md`](STATUS.md) and `docs/EVIDENCE.md` §3 before trusting the table below.
 
 | # | Cause | Fix |
 |---|---|---|

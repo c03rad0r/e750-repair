@@ -1,14 +1,21 @@
 ---
-# ⚠️ UNPROVEN HYPOTHESIS — READ STATUS.md BEFORE TRUSTING THIS ROLE.
+# ⚠️ UNPROVEN HYPOTHESIS — AND AN UNRESOLVED SIDE EFFECT. READ STATUS.md FIRST.
 #
 # This role installs the factory QCA9887 calibration data from `art`. On the target
-# unit that did NOT revive the 5 GHz radio: ath10k rejects the BOARD FILE
-# (`failed to get board id: -122`) before it ever applies per-device calibration,
-# so a calibration problem cannot explain that failure ordering.
+# unit that did NOT revive the 5 GHz radio.
 #
-# The extraction logic is sound and may be a necessary step once the real cause is
-# found, but it is demonstrably NOT sufficient. Treat this as an experiment, not a
-# fix.
+# WORSE: placing these files CHANGED the failure. After they were installed, a
+# `failed to get board id: -122` line appears in the boot log which is absent from
+# every pre-install boot. `-122` is `-EDQUOT`, a value ath10k never returns — it
+# comes back from the target firmware via ath10k_bmi_execute().
+#
+# The mechanism is plausible and one-variable: a `pre-cal-*` file sets
+# ar->cal_mode = ATH10K_PRE_CAL_MODE_FILE, which switches the BMI board-id
+# parameter the driver sends (GET_FLASH_BOARD_ID instead of GET_EEPROM_BOARD_ID).
+# That is a HYPOTHESIS, not a finding — see docs/EVIDENCE.md §3.
+#
+# Before running this role on another unit, treat it as an EXPERIMENT: capture a
+# dmesg baseline, run it, and compare — do not assume it is a repair step.
 #
 # WHY THIS ROLE EXISTS
 #

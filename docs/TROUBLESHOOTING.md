@@ -88,7 +88,90 @@ shell, or may arrive mangled. Never infer a reboot from silence — check with
 `uptime`, and prefer a **power-cycle you can observe** over a serial `reboot` for
 recovery work.
 
-## 6. `art` is wiped (not the case on this unit)
+## 6. `-122` on the board-id path (post-caldata-install signature)
+
+```
+ath10k_pci 0000:00:00.0: failed to get board id: -122
+```
+
+**Do not read this as "the driver hit a disk-quota error".** `-122` is `-EDQUOT`,
+and **`-EDQUOT` occurs nowhere in the ath10k driver** — no ath10k function can
+return it. The number is a *value* produced by the target firmware and passed
+through `ath10k_bmi_execute()`'s `resp.execute.result` field into the driver's
+`int ret`, where it then gets printed as if it were an errno.
+
+Where it surfaces:
+
+```c
+ret = ath10k_core_get_board_id_from_otp(ar);
+if (ret) {
+        ath10k_err(ar, "failed to get board id: %d\n", ret);   /* <-- this line */
+        return ret;
+}
+```
+
+The diagnostic value of this line is **negative-space information**. Two other
+prints that *should* appear around this call do **not**:
+
+- `could not execute otp for board id check: %d` — the error branch *inside*
+  `ath10k_core_get_board_id_from_otp()`
+- `boot get otp board id result 0x%08x board_id %d chip_id %d` — the `_dbg` line
+  that fires after a successful `ath10k_bmi_execute()`
+
+So the call's own execute step did not fail; something **later** returned −122.
+Consistent with `ath10k_download_board_data()` → `ath10k_bmi_read32()` failing,
+whose surrounding error prints (`failed to download board data`, `could not push
+board ext data`, `could not read board data addr`) are likewise **absent**.
+
+One candidate mechanism: `ath10k_bmi_read_memory()`'s loop has no lower-bound
+guard —
+
+```c
+while (length) {
+        rxlen = min_t(u32, length, BMI_MAX_DATA_SIZE);
+        ...
+        length -= rxlen;    /* a short read underflows to ~4 GiB */
+}
+```
+
+A short read underflows `length` to `0xFFFFFFFC` and spins far past the intended
+window. **Unconfirmed** — see `docs/EVIDENCE.md` §3.
+
+### Why the `-122` matters for diagnosis
+
+It appears **only** in boots made after the caldata files were placed
+(`grep -c -- '-122'`: pre-install log = 0, both post-install logs = 1). Placing a
+`pre-cal-*` file sets `ar->cal_mode = ATH10K_PRE_CAL_MODE_FILE`, and that value is
+read to choose which BMI parameter to send:
+
+```c
+if (ar->cal_mode == ATH10K_PRE_CAL_MODE_DT ||
+    ar->cal_mode == ATH10K_PRE_CAL_MODE_FILE ||
+    ar->cal_mode == ATH10K_PRE_CAL_MODE_NVMEM)
+        bmi_board_id_param = BMI_PARAM_GET_FLASH_BOARD_ID;
+else
+        bmi_board_id_param = BMI_PARAM_GET_EEPROM_BOARD_ID;
+```
+
+Cheapest decisive test: remove the `pre-cal-*` / `cal-*` files, reboot, check
+whether `-122` disappears; re-add, reboot, check whether it returns. One variable.
+
+### Trap: `otp calibration failed: N` proves nothing about calibration
+
+```c
+if (... && result != 0) {
+        ath10k_err(ar, "otp calibration failed: %d", result);
+        return -EINVAL;
+}
+```
+
+`result` is the **target's** answer to `ath10k_bmi_execute()`. When an earlier
+`-122` aborts the setup, `ar->id.bmi_ids_valid` stays false, which selects
+`BMI_PARAM_GET_FLASH_BOARD_ID` instead of `BMI_PARAM_FLASH_SECTION_ALL` — a
+different question to the target, which can answer `2` for reasons unrelated to
+calibration validity. **Do not argue from this line's position in the log.**
+
+## 7. `art` is wiped (not the case on this unit)
 
 If the `art` header assertion in the `caldata` role fails, the partition no longer
 holds valid calibration:
