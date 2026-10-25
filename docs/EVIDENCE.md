@@ -71,10 +71,12 @@ ath10k_pci 0000:00:00.0: could not probe fw (-22)
 
 `-22` = `-EINVAL`, on the *calibration download* step specifically.
 
-### 3b. Boot AFTER caldata was installed (2026-10-23 15:14 and 17:23)
+### 3b. Boot AFTER caldata was installed (2026-10-23 15:14 and 17:23, and 2026-10-25)
 
-Logs: `~/reports/e750/poweron2/ttyUSB3.log`, `~/reports/e750/reboot_trigger.log`.
-**Both contain `-122`** (`grep -c -- '-122'` = 1 in each).
+Logs: `~/reports/e750/poweron2/ttyUSB3.log`, `~/reports/e750/reboot_trigger.log`,
+`~/reports/e750/poweron3/ttyUSB3.log`. **All three contain `-122`** (`grep -c -- '-122'`
+= 1 in each). The 2026-10-25 capture is a fresh power-on on a third day, so the
+signature is stable across at least three boots and two calendar days.
 
 ```
 ath10k_pci 0000:00:00.0: qca9887 hw1.0 target 0x4100016d chip_id 0x004000ff sub 0000:0000
