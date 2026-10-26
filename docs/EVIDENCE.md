@@ -193,6 +193,59 @@ immediately after it. This is a hypothesis with a mechanism, not a finding.
   (`firmware ver 10.1-ct-87`, driver `ath10k 6.15`). Line-for-line agreement with
   the OpenWrt build was not verified.
 
+### 3c. THE REVERSAL — files absent again, −122 GONE (2026-10-25, live E750)
+
+The unit was reflashed to **OpenWrt 25.12.5 `r33051`, ath79/nand, kernel 6.12.94**
+and was up 1 day 1:21 when measured over SSH (`ssh -i ~/.ssh/id_bench
+root@192.168.8.1`). The `cal-pci-*` / `pre-cal-*` files are **gone** — the
+firmware directory holds only the stock files:
+
+```
+/lib/firmware/ath10k/QCA9887/hw1.0/
+  -rw-r--r--  1024    board.bin
+  -rw-r--r--  212900  firmware-2.bin
+find / -name 'cal-pci*' -o -name 'pre-cal*'   ->  (nothing)
+```
+
+Live `dmesg | grep -i ath10k`:
+
+```
+[   29.790448] ath10k_pci 0000:00:00.0: board_file api 1 bmi_id N/A crc32 546cca0d
+[   29.829578] ath10k_pci 0000:00:00.0: failed to read device EEPROM at 0000
+[   29.836703] ath10k_pci 0000:00:00.0: failed to read calibration data from EEPROM: -22
+[   29.904484] ath10k_pci 0000:00:00.0: otp calibration failed: 2
+[   29.910568] ath10k_pci 0000:00:00.0: failed to run otp: -22 (download-cal-data)
+[   29.918152] ath10k_pci 0000:00:00.0: could not init core (-22)
+[   29.951733] ath10k_pci 0000:00:00.0: could not probe fw (-22)
+```
+
+`dmesg | grep -c -- '-122'` = **0**.
+
+**This is a two-sided natural experiment:**
+
+| state | cal files present | `-122` | EEPROM `-22` |
+|---|---|---|---|
+| 2026-10-23 04:43 (stock) | no | **absent** | present |
+| 2026-10-23 15:14 / 17:23 | yes | **present** | present |
+| 2026-10-25 (reflashed 25.12.5) | no | **absent** | present |
+
+The −122 tracks the presence of the cal files in **both** directions. The
+hypothesis in §3b is therefore **CONFIRMED as an association**: placing a
+`pre-cal-*`/`cal-*` file makes ath10k ask the firmware a board-id question it
+refuses, and the refusal surfaces as `-122` (`-EDQUOT`).
+
+**But it also settles the original question: caldata is NOT the fix.** The
+underlying fault — `failed to read calibration data from EEPROM: -22`, `could not
+init core (-22)` — is **unchanged** on a clean 25.12.5 image with no cal files.
+The calibration download still fails exactly as it did on the original snapshot.
+Installing caldata did not repair the radio; it added a second, self-inflicted
+failure on top of the first.
+
+Scope limit: this is an observational A/B across three boots, not a controlled
+test with re-application on the current image. Re-applying the files on 25.12.5
+and confirming −122 **returns** would close it completely — that is the one
+remaining step.
+
 ### BOARD CONSTRAINT — which hardware can test the −122 at all (measured 2026-10-25)
 
 **The −122 can only be reproduced on this E750. No other board on the bench can
