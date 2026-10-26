@@ -1,0 +1,37 @@
+# Live read-back from the reflashed E750 (192.168.8.1), 2026-10-25
+# captured over SSH with ~/.ssh/id_bench
+
+## identity
+glinet,gl-e750
+GL.iNet GL-E750
+DISTRIB_RELEASE='25.12.5'
+DISTRIB_REVISION='r33051-f5dae5ece4'
+DISTRIB_TARGET='ath79/nand'
+DISTRIB_ARCH='mips_24kc'
+6.12.94
+ 17:55:26 up 1 day,  1:27,  load average: 0.00, 0.00, 0.00
+
+## firmware dir (cal files absent)
+-rw-r--r--    1 root     root          1024 Jun 29 12:59 board.bin
+-rw-r--r--    1 root     root        212900 Jun 29 12:59 firmware-2.bin
+
+## cal/pre-cal search
+(end)
+
+## live dmesg (ath10k)
+[   25.925715] ath10k 6.15 driver, optimized for CT firmware, probing pci device: 0x50.
+[   25.982768] ath10k_pci 0000:00:00.0: enabling device (0000 -> 0002)
+[   25.991557] ath10k_pci 0000:00:00.0: pci irq legacy oper_irq_mode 1 irq_mode 0 reset_mode 0
+[   29.156358] ath10k_pci 0000:00:00.0: qca9887 hw1.0 target 0x4100016d chip_id 0x004000ff sub 0000:0000
+[   29.165990] ath10k_pci 0000:00:00.0: kconfig debug 0 debugfs 1 tracing 0 dfs 1 testmode 0
+[   29.177023] ath10k_pci 0000:00:00.0: firmware ver 10.1-ct-87-__fW-022-d8dab8e8 api 2 features wmi-10.x,has-wmi-mgmt-tx,mfp,peer-fixed-rate,txstatus-noack,wmi-10.x-CT,ratemask-CT,txrate-CT,get-temp-CT,tx-rc-CT,cust-stats-CT,retry-gt2-CT,txrate2-CT,beacon-cb-CT,wmi-block-ack-CT crc32 81827605
+[   29.790448] ath10k_pci 0000:00:00.0: board_file api 1 bmi_id N/A crc32 546cca0d
+[   29.829578] ath10k_pci 0000:00:00.0: failed to read device EEPROM at 0000
+[   29.836703] ath10k_pci 0000:00:00.0: failed to read calibration data from EEPROM: -22
+[   29.904484] ath10k_pci 0000:00:00.0: otp calibration failed: 2
+[   29.910568] ath10k_pci 0000:00:00.0: failed to run otp: -22 (download-cal-data)
+[   29.918152] ath10k_pci 0000:00:00.0: could not init core (-22)
+[   29.951733] ath10k_pci 0000:00:00.0: could not probe fw (-22)
+
+## -122 count
+0

@@ -55,7 +55,7 @@ signatures and the difference between them is the current lead.
 
 ### 3a. Boot before any caldata was installed (2026-10-23 04:43)
 
-Log: `~/reports/e750/ttyUSB3.log`. **No `-122` in this log** (`grep -c -- '-122'` = 0).
+Log: `evidence/boots/2026-10-23_0443_pre-install.log`. **No `-122` in this log** (`grep -c -- '-122'` = 0).
 
 ```
 ath10k_pci 0000:00:00.0: qca9887 hw1.0 target 0x4100016d chip_id 0x004000ff sub 0000:0000
@@ -73,8 +73,8 @@ ath10k_pci 0000:00:00.0: could not probe fw (-22)
 
 ### 3b. Boot AFTER caldata was installed (2026-10-23 15:14 and 17:23, and 2026-10-25)
 
-Logs: `~/reports/e750/poweron2/ttyUSB3.log`, `~/reports/e750/reboot_trigger.log`,
-`~/reports/e750/poweron3/ttyUSB3.log`. **All three contain `-122`** (`grep -c -- '-122'`
+Logs: `evidence/boots/2026-10-23_1528_post-install.log`, `evidence/boots/2026-10-23_1723_post-install.log`,
+`evidence/boots/2026-10-25_post-reflash.log`. **All three contain `-122`** (`grep -c -- '-122'`
 = 1 in each). The 2026-10-25 capture is a fresh power-on on a third day, so the
 signature is stable across at least three boots and two calendar days.
 
@@ -151,7 +151,7 @@ position in the log to "calibration cannot be the cause" is invalid.
 
 ### What changed between 3a and 3b
 
-Between the two boots, two files were placed (see `~/reports/e750/fix_paths.py`,
+Between the two boots, two files were placed (see `evidence/scripts/2026-10-23_fix_paths.py`,
 2026-10-23 15:37):
 
 ```
