@@ -1,5 +1,7 @@
 *.retry
 *.log
+# ...except committed evidence captures (see evidence/README.md)
+!evidence/boots/*.log
 __pycache__/
 .ansible/
 out/

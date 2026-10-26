@@ -1,0 +1,277 @@
+[ 6922.592150] reboot: Restarting system
+”UTJn:±}Õ‰½½Ñ‰é‰Õ‰½½Ñ}ÍÑ…ÉÑ‰u5)ÍÉ¥5)!½¹•å	••É¹Á5*þath_ddr_initial_config(195): (16bit) ddr2 init
+ath_sys_frequency: cpu 650 ddr 597 ahb 216
+tap = 0x00000003
+Tap (low, high) = (0x9, 0x21)
+Tap values = (0x15, 0x15, 0x15, 0x15)
+128 MB
+Flash Manuf Id 0xef, DeviceId0 0x40, DeviceId1 0x18
+flash size 16MB, sector count = 256
+*** Warning - bad CRC, using default environment
+
+Power up PLL with outdiv = 0 then switch to 3
+ath_gmac_enet_initialize...
+No valid address in Flash. Using fixed address
+No valid address in Flash. Using fixed address
+ath_gmac_enet_initialize: reset mask:c02200 
+Honey Bee ---->S27 PHY*
+S27 reg init
+: cfg1 0x800c0000 cfg2 0x7114
+eth0: 00:03:7f:09:0b:ad
+eth0 up
+Honey Bee ---->  MAC 1 S27 PHY *
+S27 reg init
+ATHRS27: resetting s27
+ATHRS27: s27 reset done
+: cfg1 0x800c0000 cfg2 0x7214
+eth1: 00:03:7f:09:0b:ad
+eth1 up
+eth0, eth1
+Qualcomm Atheros SPI NAND Driver, Version 0.1 (c) 2014  Qualcomm Atheros Inc.
+MFR:194,DID:18
+====== NAND Parameters ======
+sc = 0x87ff5f70 page = 0x800 block = 0x20000
+Setting 0x181162c0 to 0x7fffa100
+Hit 'gl' to stop autoboot:  2  1  0 -1 
+
+Device 0 bad blocks:
+  04e80000
+  04ec0000
+  05b20000
+Found ART,Checking calibration status...
+Device have calibrated,Checking device test status...
+Device have tested,Checking MAC address...
+Device have MAC address,Checking device flash status...
+Device have nor and nand flash,Booting standard firmware from nor flash...
+Booting image at: 0x9F060000
+Using eth0 device
+Tx Timed out
+ping failed; host 192.168.1.2 is not alive
+ERROR! Server not reachable!
+## Booting image at 9f060000 ...
+   Image Name:   MIPS OpenWrt Linux-6.12.80
+   Created:      2026-04-09  23:10:09 UTC
+   Image Type:   MIPS Linux Kernel Image (lzma compressed)
+   Data Size:    3249336 Bytes =  3.1 MB
+   Load Address: 80060000
+   Entry Point:  80060000
+   Verifying Checksum at 0x9f060040 ...OK
+   Uncompressing Kernel Image ... OK
+No initrd
+## Transferring control to Linux (at address 80060000) ...
+## Giving linux memsize in bytes, 134217728
+[ "gl_uboot": "linux_start"]
+Starting kernel ...
+
+[    0.000000] Linux version 6.12.80 (builder@buildhost) (mips-openwrt-linux-musl-gcc (OpenWrt GCC 14.3.0 r33865-8101611355) 14.3.0, GNU ld (GNU Binutils) 2.44) #0 Thu Apr  9 23:10:09 2026
+[    0.000000] printk: legacy bootconsole [early0] enabled
+[    0.000000] CPU0 revision is: 00019374 (MIPS 24Kc)
+[    0.000000] MIPS: machine is GL.iNet GL-E750
+[    0.000000] SoC: Qualcomm Atheros QCA9533 ver 2 rev 0
+[    0.000000] Initrd not found or empty - disabling initrd
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] Primary instruction cache 64kB, VIPT, 4-way, linesize 32 bytes.
+[    0.000000] Primary data cache 32kB, 4-way, VIPT, cache aliases, linesize 32 bytes
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000000000000-0x0000000007ffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000000000000-0x0000000007ffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000000000000-0x0000000007ffffff]
+[    0.000000] Kernel command line: console=ttyS0,115200n8 rootfstype=squashfs,jffs2
+[    0.000000] Dentry cache hash table entries: 16384 (order: 4, 65536 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 8192 (order: 3, 32768 bytes, linear)
+[    0.000000] Writing ErrCtl register=00000000
+[    0.000000] Readback ErrCtl register=00000000
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 32768
+[    0.000000] mem auto-init: stack:off, heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] RCU Tasks Trace: Setting shift to 0 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=1.
+[    0.000000] NR_IRQS: 51
+[    0.000000] CPU clock: 650.000 MHz
+[    0.000000] clocksource: MIPS: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 5880801374 ns
+[    0.000002] sched_clock: 32 bits at 325MHz, resolution 3ns, wraps every 6607641598ns
+[    0.008302] Calibrating delay loop... 432.53 BogoMIPS (lpj=2162688)
+[    0.074876] pid_max: default: 32768 minimum: 301
+[    0.091783] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.099511] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.119168] Memory: 117232K/131072K available (8091K kernel code, 594K rwdata, 1768K rodata, 1252K init, 247K bss, 13288K reserved, 0K cma-reserved)
+[    0.138259] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604462750000 ns
+[    0.148711] futex hash table entries: 256 (order: 0, 3072 bytes, linear)
+[    0.164314] pinctrl core: initialized pinctrl subsystem
+[    0.173524] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.180474] thermal_sys: Registered thermal governor 'step_wise'
+[    0.202058] clocksource: Switched to clocksource MIPS
+[    0.227435] NET: Registered PF_INET protocol family
+[    0.232910] IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+[    0.242355] tcp_listen_portaddr_hash hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.251308] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.260765] TCP established hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.268908] TCP bind hash table entries: 1024 (order: 1, 8192 bytes, linear)
+[    0.276394] TCP: Hash tables configured (established 1024 bind 1024)
+[    0.283919] MPTCP token hash table entries: 512 (order: 1, 6144 bytes, linear)
+[    0.291837] UDP hash table entries: 256 (order: 0, 4096 bytes, linear)
+[    0.298820] UDP-Lite hash table entries: 256 (order: 0, 4096 bytes, linear)
+[    0.307400] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.313509] PCI: CLS 0 bytes, default 32
+[    0.322239] workingset: timestamp_bits=14 max_order=15 bucket_order=1
+[    0.331094] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    0.337324] jffs2: version 2.2 (NAND) (SUMMARY) (LZMA) (RTIME) (CMODE_PRIORITY) (c) 2001-2006 Red Hat, Inc.
+[    0.352354] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 251)
+[    0.364354] pinctrl-single 1804002c.pinmux: 576 pins, size 72
+[    0.371354] gpio-export gpio-export: 1 gpio(s) exported
+[    0.378264] Serial: 8250/16550 driver, 16 ports, IRQ sharing enabled
+[    0.391214] printk: legacy console [ttyS0] disabled
+[    0.397122] 18020000.uart: ttyS0 at MMIO 0x18020000 (irq = 12, base_baud = 1562500) is a 16550A
+[    0.406428] printk: legacy console [ttyS0] enabled
+[    0.406428] printk: legacy console [ttyS0] enabled
+[    0.416824] printk: legacy bootconsole [early0] disabled
+[    0.416824] printk: legacy bootconsole [early0] disabled
+[    0.454637] 5 fixed-partitions partitions found on MTD device spi0.0
+[    0.461246] Creating 5 MTD partitions on "spi0.0":
+[    0.466276] 0x000000000000-0x000000040000 : "u-boot"
+[    0.474087] 0x000000040000-0x000000050000 : "u-boot-env"
+[    0.481261] 0x000000050000-0x000000060000 : "art"
+[    0.488297] 0x000000060000-0x000000460000 : "kernel"
+[    0.495305] 0x000000460000-0x000001000000 : "reserved"
+[    0.505835] spi-nand spi0.1: Macronix SPI NAND was found.
+[    0.511447] spi-nand spi0.1: 128 MiB, block size: 128 KiB, page size: 2048, OOB size: 64
+[    0.520211] 1 fixed-partitions partitions found on MTD device (null)
+[    0.526839] Creating 1 MTD partitions on "(null)":
+[    0.531798] 0x000000000000-0x000008000000 : "ubi"
+[    0.971908] switch0: Atheros AR8229 rev. 1 switch registered on mdio.0
+[    1.403313] ag71xx-legacy 19000000.eth: connected to PHY at mdio.0:1f:04 [uid=004dd042, driver=Qualcomm Atheros QCA9561 built-in PHY]
+[    1.416669] eth0: Atheros AG71xx at 0xb9000000, irq 4, mode: mii
+[    1.426178] NET: Registered PF_INET6 protocol family
+[    1.437825] Segment Routing with IPv6
+[    1.441745] In-situ OAM (IOAM) with IPv6
+[    1.446058] NET: Registered PF_PACKET protocol family
+[    1.451374] bridge: filtering via arp/ip/ip6tables is no longer available by default. Update your scripts to load br_netfilter if you need this.
+[    1.465216] 8021q: 802.1Q VLAN Support v1.8
+[    1.505330] PCI host bridge to bus 0000:00
+[    1.509594] pci_bus 0000:00: root bus resource [mem 0x10000000-0x13ffffff]
+[    1.516785] pci_bus 0000:00: root bus resource [io  0x0000]
+[    1.522585] pci_bus 0000:00: No busn resource found for root bus, will use [bus 00-ff]
+[    1.530851] pci 0000:00:00.0: [168c:0050] type 00 class 0x028000 PCIe Endpoint
+[    1.538384] pci 0000:00:00.0: BAR 0 [mem 0x00000000-0x001fffff 64bit]
+[    1.545110] pci 0000:00:00.0: ROM [mem 0x00000000-0x0000ffff pref]
+[    1.551583] pci 0000:00:00.0: supports D1
+[    1.555748] pci 0000:00:00.0: PME# supported from D0 D1 D3hot
+[    1.562874] pci_bus 0000:00: busn_res: [bus 00-ff] end is updated to 00
+[    1.569755] pci 0000:00:00.0: BAR 0 [mem 0x10000000-0x101fffff 64bit]: assigned
+[    1.577375] pci 0000:00:00.0: ROM [mem 0x10200000-0x1020ffff pref]: assigned
+[    1.589731] UBI: auto-attach mtd5
+[    1.593258] ubi0: attaching mtd5
+[    4.154780] ubi0: scanning is finished
+[    4.191207] ubi0: attached mtd5 (name "ubi", size 128 MiB)
+[    4.196983] ubi0: PEB size: 131072 bytes (128 KiB), LEB size: 126976 bytes
+[    4.204097] ubi0: min./max. I/O unit sizes: 2048/2048, sub-page size 2048
+[    4.211113] ubi0: VID header offset: 2048 (aligned 2048), data offset: 4096
+[    4.218327] ubi0: good PEBs: 1021, bad PEBs: 3, corrupted PEBs: 0
+[    4.224644] ubi0: user volume: 2, internal volumes: 1, max. volumes count: 128
+[    4.232117] ubi0: max/mean erase counter: 7/3, WL threshold: 4096, image sequence number: 1681043266
+[    4.241560] ubi0: available PEBs: 0, total reserved PEBs: 1021, PEBs reserved for bad PEB handling: 17
+[    4.251292] ubi0: background thread "ubi_bgt0d" started, PID 285
+[    4.260029] block ubiblock0_0: created from ubi0:0(rootfs)
+[    4.265801] ubiblock: device ubiblock0_0 (rootfs) set to be root filesystem
+[    4.273298] clk: Disabling unused clocks
+[    4.297118] VFS: Mounted root (squashfs filesystem) readonly on device 254:0.
+[    4.311998] Freeing unused kernel image (initmem) memory: 1252K
+[    4.318159] This architecture does not have kernel memory protection.
+[    4.324841] Run /sbin/init as init process
+[    5.418175] init: Console is alive
+[    5.422232] init: - watchdog -
+[    7.453357] kmodloader: loading kernel modules from /etc/modules-boot.d/*
+[    7.560652] usbcore: registered new interface driver usbfs
+[    7.566515] usbcore: registered new interface driver hub
+[    7.572225] usbcore: registered new device driver usb
+[    7.587161] gpio_button_hotplug: loading out-of-tree module taints kernel.
+[    7.607995] ehci-platform 1b000000.usb: EHCI Host Controller
+[    7.614002] ehci-platform 1b000000.usb: new USB bus registered, assigned bus number 1
+[    7.622293] ehci-platform 1b000000.usb: irq 3, io mem 0x1b000000
+[    7.642086] ehci-platform 1b000000.usb: USB 2.0 started, EHCI 1.00
+[    7.650017] hub 1-0:1.0: USB hub found
+[    7.654431] hub 1-0:1.0: 1 port detected
+[    7.663174] kmodloader: done loading kernel modules from /etc/modules-boot.d/*
+[    7.681535] init: - preinit -
+[    7.997288] usb 1-1: new high-speed USB device number 2 using ehci-platform
+[    8.277144] hub 1-1:1.0: USB hub found
+[    8.285028] hub 1-1:1.0: 4 ports detected
+[    8.742619] usb 1-1.1: new high-speed USB device number 3 using ehci-platform
+[   10.682111] random: crng init done
+Cannot parse config file '/etc/fw_env.config': No such file or directory
+Failed to find NVMEM device
+Press the [f] key and hit [enter] to enter failsafe mode
+Press the [1], [2], [3] or [4] key and hit [enter] to select the debug level
+[   14.782068] usb 1-1.2: new high-speed USB device number 4 using ehci-platform
+[   14.902920] usb 1-1.2: config 1 has an invalid interface number: 8 but max is 6
+[   14.910519] usb 1-1.2: config 1 has an invalid interface number: 9 but max is 6
+[   14.918129] usb 1-1.2: config 1 has an invalid interface number: 9 but max is 6
+[   14.925707] usb 1-1.2: config 1 has an invalid interface number: 12 but max is 6
+[   14.933368] usb 1-1.2: config 1 has no interface number 4
+[   14.938950] usb 1-1.2: config 1 has no interface number 5
+[   14.944544] usb 1-1.2: config 1 has no interface number 6
+[   16.341897] UBIFS (ubi0:1): Mounting in unauthenticated mode
+[   16.348147] UBIFS (ubi0:1): background thread "ubifs_bgt0_1" started, PID 462
+[   16.513769] UBIFS (ubi0:1): recovery needed
+[   16.835727] UBIFS (ubi0:1): recovery completed
+[   16.840518] UBIFS (ubi0:1): UBIFS: mounted UBI device 0, volume 1, name "rootfs_data"
+[   16.848658] UBIFS (ubi0:1): LEB size: 126976 bytes (124 KiB), min./max. I/O unit sizes: 2048 bytes/2048 bytes
+[   16.858920] UBIFS (ubi0:1): FS size: 120754176 bytes (115 MiB, 951 LEBs), max 962 LEBs, journal size 6094848 bytes (5 MiB, 48 LEBs)
+[   16.871167] UBIFS (ubi0:1): reserved for root: 4952683 bytes (4836 KiB)
+[   16.878021] UBIFS (ubi0:1): media format: w5/r0 (latest is w5/r0), UUID 9A51B063-0B13-4E40-A40A-0A431B27908B, small LPT model
+[   16.915982] mount_root: switching to ubifs overlay
+[   16.963543] urandom-seed: Seeding with /etc/urandom.seed
+[   17.297064] procd: - early -
+[   17.300460] procd: - watchdog -
+[   18.118325] procd: - watchdog -
+[   18.122754] procd: - ubus -
+[   18.378881] procd: - init -
+Please press Enter to activate this console.
+[   20.686956] kmodloader: loading kernel modules from /etc/modules.d/*
+[   22.356648] i2c_dev: i2c /dev entries driver
+[   22.413732] usbcore: registered new interface driver cdc_wdm
+[   22.421759] Loading modules backported from Linux version v6.18.7-0-g5dfbc5357
+[   22.429320] Backport generated by backports.git c8a37ce
+[   23.010698] usbcore: registered new interface driver usbserial_generic
+[   23.017669] usbserial: USB Serial support registered for generic
+[   23.064157] usbcore: registered new interface driver cdc_ether
+[   23.094988] usbcore: registered new interface driver cdc_ncm
+[   23.664045] urngd: v1.0.2 started.
+[   24.248531] PPP generic driver version 2.4.2
+[   24.273535] NET: Registered PF_PPPOX protocol family
+[   24.406423] ath10k 6.15 driver, optimized for CT firmware, probing pci device: 0x50.
+[   24.453444] ath10k_pci 0000:00:00.0: enabling device (0000 -> 0002)
+[   24.462282] ath10k_pci 0000:00:00.0: pci irq legacy oper_irq_mode 1 irq_mode 0 reset_mode 0
+[   28.442364] ath10k_pci 0000:00:00.0: qca9887 hw1.0 target 0x4100016d chip_id 0x004000ff sub 0000:0000
+[   28.451934] ath10k_pci 0000:00:00.0: kconfig debug 0 debugfs 1 tracing 0 dfs 1 testmode 0
+[   28.463004] ath10k_pci 0000:00:00.0: firmware ver 10.1-ct-87-__fW-022-d8dab8e8 api 2 features wmi-10.x,has-wmi-mgmt-tx,mfp,peer-fixed-rate,txstatus-noack,wmi-10.x-CT,ratemask-CT,txrate-CT,get-temp-CT,tx-rc-CT,cust-stats-CT,retry-gt2-CT,txrate2-CT,beacon-cb-CT,wmi-block-ack-CT crc32 81827605
+[   29.323164] ath10k_pci 0000:00:00.0: board_file api 1 bmi_id N/A crc32 546cca0d
+[   29.406923] ath10k_pci 0000:00:00.0: failed to get board id: -122
+[   29.413447] ath10k_pci 0000:00:00.0: failed to read device EEPROM at 0000
+[   29.420483] ath10k_pci 0000:00:00.0: failed to read calibration data from EEPROM: -22
+[   29.493752] ath10k_pci 0000:00:00.0: otp calibration failed: 2
+[   29.499823] ath10k_pci 0000:00:00.0: failed to run otp: -22 (download-cal-data)
+[   29.507406] ath10k_pci 0000:00:00.0: could not init core (-22)
+[   29.524843] ath10k_pci 0000:00:00.0: could not probe fw (-22)
+[   30.119087] cdc_mbim 1-1.2:1.8: setting rx_max = 16384
+[   30.125045] cdc_mbim 1-1.2:1.8: cdc-wdm0: USB WDM device
+[   30.131660] cdc_mbim 1-1.2:1.8 wwan0: register 'cdc_mbim' at usb-1b000000.usb-1.2, CDC MBIM, 9e:94:8a:de:3f:7b
+[   30.142386] usbcore: registered new interface driver cdc_mbim
+[   30.186844] usbcore: registered new interface driver option
+[   30.192822] usbserial: USB Serial support registered for GSM modem (1-port)
+[   30.200729] option 1-1.2:1.0: GSM modem (1-port) converter detected
+[   30.207597] usb 1-1.2: GSM modem (1-port) converter now attached to ttyUSB0
+[   30.215244] option 1-1.2:1.1: GSM modem (1-port) converter detected
+[   30.222125] usb 1-1.2: GSM modem (1-port) converter now attached to ttyUSB1
+[   30.229715] option 1-1.2:1.2: GSM modem (1-port) converter detected
+[   30.236606] usb 1-1.2: GSM modem (1-port) converter now attached to ttyUSB2
+[   30.244262] option 1-1.2:1.3: GSM modem (1-port) converter detected
+[   30.251075] usb 1-1.2: GSM modem (1-port) converter now attached to ttyUSB3
+[   30.356131] ieee80211 phy1: Atheros AR9531 Rev:2 mem=0x7bde486e, irq=16
+[   30.392658] kmodloader: done loading kernel modules from /etc/modules.d/*
+[   52.127683] br-lan: port 1(eth0) entered blocking state
+[   52.133183] br-lan: port 1(eth0) entered disabled state
+[   52.138647] ag71xx-legacy 19000000.eth eth0: entered allmulticast mode
+[   52.145759] ag71xx-legacy 19000000.eth eth0: entered promiscuous mode
+[   61.264036] 8021q: adding VLAN 0 to HW filter on device wwan0

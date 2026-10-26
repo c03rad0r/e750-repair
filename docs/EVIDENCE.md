@@ -74,7 +74,7 @@ ath10k_pci 0000:00:00.0: could not probe fw (-22)
 ### 3b. Boot AFTER caldata was installed (2026-10-23 15:14 and 17:23, and 2026-10-25)
 
 Logs: `evidence/boots/2026-10-23_1528_post-install.log`, `evidence/boots/2026-10-23_1723_post-install.log`,
-`evidence/boots/2026-10-25_post-reflash.log`. **All three contain `-122`** (`grep -c -- '-122'`
+`evidence/boots/2026-10-25_serial_pre-reflash.log`. **All three contain `-122`** (`grep -c -- '-122'`
 = 1 in each). The 2026-10-25 capture is a fresh power-on on a third day, so the
 signature is stable across at least three boots and two calendar days.
 
