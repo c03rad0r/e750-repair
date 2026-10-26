@@ -214,7 +214,10 @@ so:
 
 - **GL-MT3000 (MediaTek MT7986, `mt76`)** — cannot reproduce the −122. It is a
   control for "does a 5 GHz radio come up on other hardware", **not** a test of
-  this lead.
+  this lead. Measured 2026-10-25 on `tollgate-9BD4` (GL-MT3000, OpenWrt 25.12.5,
+  kernel 6.12.94): `wifi status` reports `radio1` `band 5g`, `channel 36`,
+  `htmode HE80`, `up: true`, `disabled: false` — **its 5 GHz radio is healthy**,
+  and `dmesg | grep -c ath10k` = 0. There is no dead radio to investigate there.
 - **COMFAST CF-WR632AX (MediaTek MT7981, `mt76`)** — same, cannot reproduce it.
 - **D-Link COVR-X1860 (ramips/mt7621)** — different target and radio stack again;
   it was never offered for this work and was only identity-read.
