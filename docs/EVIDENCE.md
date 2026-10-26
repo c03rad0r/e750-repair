@@ -219,6 +219,11 @@ so:
   `htmode HE80`, `up: true`, `disabled: false` — **its 5 GHz radio is healthy**,
   and `dmesg | grep -c ath10k` = 0. There is no dead radio to investigate there.
 - **COMFAST CF-WR632AX (MediaTek MT7981, `mt76`)** — same, cannot reproduce it.
+  Measured 2026-10-25 on `comfast-b3ba` (OpenWrt 25.12.5, kernel 6.12.94,
+  `comfast,cf-wr632ax`): `wifi status` reports `radio1` `band 5g`,
+  `channel 36`, `htmode HE80`, `up: true`, `disabled: false`, and
+  `dmesg | grep -c ath10k` = 0. **Its 5 GHz radio is healthy too** — so neither
+  offered board has a dead 5 GHz radio, and neither has the ath10k code path.
 - **D-Link COVR-X1860 (ramips/mt7621)** — different target and radio stack again;
   it was never offered for this work and was only identity-read.
 
