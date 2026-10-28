@@ -1,0 +1,198 @@
+---
+# BSBF client on the GL-E750. All target commands use `raw`: a stock OpenWrt
+# image has no Python, so the normal Ansible module path is unavailable.
+
+- name: Read the board name
+  ansible.builtin.raw: cat /tmp/sysinfo/board_name
+  register: _bsbf_board
+  changed_when: false
+
+- name: Refuse to run on a different board
+  ansible.builtin.assert:
+    that:
+      - _bsbf_board.stdout | trim == 'glinet,gl-e750'
+    fail_msg: "Expected glinet,gl-e750; got {{ _bsbf_board.stdout | trim }}"
+
+- name: Read the OpenWrt release
+  ansible.builtin.raw: . /etc/openwrt_release; echo "$DISTRIB_RELEASE"
+  register: _bsbf_release
+  changed_when: false
+
+- name: Refuse to run outside OpenWrt 25.12
+  ansible.builtin.assert:
+    that:
+      - _bsbf_release.stdout is search('^25\\.12\\.')
+    fail_msg: "Expected OpenWrt 25.12.x; got {{ _bsbf_release.stdout | trim }}"
+
+- name: Read the MPTCP kernel switch
+  ansible.builtin.raw: cat /proc/sys/net/mptcp/enabled
+  register: _bsbf_mptcp
+  changed_when: false
+
+- name: Require kernel MPTCP
+  ansible.builtin.assert:
+    that:
+      - _bsbf_mptcp.stdout | trim == '1'
+    fail_msg: "Kernel MPTCP is not enabled"
+
+- name: Read free overlay space
+  ansible.builtin.raw: df -k /overlay | tail -1 | awk '{print $4}'
+  register: _bsbf_df
+  changed_when: false
+
+- name: Require at least 20 MB free
+  ansible.builtin.assert:
+    that:
+      - _bsbf_df.stdout | int > 20480
+    fail_msg: "Less than 20 MB free on /overlay"
+
+- name: Refresh the apk index
+  ansible.builtin.raw: apk update
+  register: _bsbf_apk_update
+  changed_when: true
+
+- name: Install the BSBF client packages
+  ansible.builtin.raw: "apk add {{ bsbf_packages | join(' ') }}"
+  register: _bsbf_apk
+  changed_when: "'Installing' in _bsbf_apk.stdout"
+
+- name: Read the MBIM control device
+  ansible.builtin.raw: ls -l /dev/cdc-wdm0
+  register: _bsbf_wdm
+  changed_when: false
+  failed_when: false
+
+- name: Require the MBIM control device
+  ansible.builtin.assert:
+    that:
+      - _bsbf_wdm.rc == 0
+    fail_msg: >-
+      /dev/cdc-wdm0 is missing after installing kmod-usb-net-cdc-mbim and
+      umbim. The modem is not in MBIM mode; run bsbf-quectel-usbnet once and
+      reboot, then re-run this playbook.
+
+- name: Configure the cellular WAN and the STA metric
+  ansible.builtin.raw: |
+    set -e
+    uci set network.{{ bsbf_cellular_uci }}='interface'
+    uci set network.{{ bsbf_cellular_uci }}.device='/dev/cdc-wdm0'
+    uci set network.{{ bsbf_cellular_uci }}.proto='mbim'
+    uci set network.{{ bsbf_cellular_uci }}.apn='{{ bsbf_apn }}'
+    uci set network.{{ bsbf_cellular_uci }}.pdptype='ipv4'
+    uci set network.{{ bsbf_cellular_uci }}.metric='{{ bsbf_cellular_metric }}'
+    uci set network.{{ bsbf_cellular_uci }}.disabled='0'
+    uci set network.wwan.metric='{{ bsbf_wifi_metric }}'
+    uci delete network.wan1 2>/dev/null || true
+    uci commit network
+  changed_when: true
+
+- name: Bring up the cellular WAN
+  ansible.builtin.raw: |
+    /etc/init.d/network reload >/dev/null 2>&1 || true
+    ifup {{ bsbf_cellular_uci }} 2>/dev/null || true
+    for i in $(seq 1 40); do
+      ifstatus {{ bsbf_cellular_uci }} 2>/dev/null | grep -q '"up": true' && exit 0
+      sleep 2
+    done
+    exit 1
+  changed_when: false
+
+- name: Disable the Quectel AT probe
+  ansible.builtin.raw: /etc/init.d/bsbf-quectel-usbnet disable 2>/dev/null || true
+  changed_when: false
+
+- name: Write the BSBF client configuration
+  ansible.builtin.raw: >-
+    umask 077 && mkdir -p /etc/bsbf &&
+    printf 'server_ipv4=%s\nserver_port=%s\nuuid=%s\n'
+    '{{ bsbf_server_ipv4 }}' '{{ bsbf_server_port }}' '{{ bsbf_client_uuid }}'
+    > /etc/bsbf/bsbf-bonding.conf &&
+    chmod 600 /etc/bsbf/bsbf-bonding.conf
+  no_log: true
+  changed_when: true
+
+- name: Check the MPTCP probe patch
+  ansible.builtin.raw: >-
+    grep -q 'OUTPUT="You are using MPTCP."' /usr/sbin/bsbf-mptcp
+    && grep -q '1.1.1.1' /usr/sbin/bsbf-mptcp
+    && grep -q 'if ! ip mp e | grep -q "dev $IFACE"; then' /usr/sbin/bsbf-mptcp
+    && echo patched || echo unpatched
+  register: _bsbf_probe
+  changed_when: false
+
+- name: Bypass the broken MPTCP support probe
+  ansible.builtin.raw: |
+    cp -n /usr/sbin/bsbf-mptcp /usr/sbin/bsbf-mptcp.orig
+    sed -i 's#OUTPUT=$(mptcpize run curl $CURL_ARGS --interface "$IFACE")#OUTPUT="You are using MPTCP."#' /usr/sbin/bsbf-mptcp
+    sed -i 's/5\.196\.67\.207/1.1.1.1/g' /usr/sbin/bsbf-mptcp
+    sed -i 's#if ! grep -xq "$IFACE" /run/bsbf-mptcp-supported; then#if ! ip mp e | grep -q "dev $IFACE"; then#' /usr/sbin/bsbf-mptcp
+  when:
+    - bsbf_patch_mptcp_probe | bool
+    - "'patched' not in _bsbf_probe.stdout"
+  changed_when: true
+
+- name: Declare backup subflows
+  ansible.builtin.raw: >-
+    printf '%s\n' {{ bsbf_backup_interfaces | map('quote') | join(' ') }}
+    > /etc/bsbf/bsbf-mptcp-subflow-backup
+  changed_when: true
+
+- name: Check the nft boot hook
+  ansible.builtin.raw: >-
+    grep -q 'modprobe nft_tproxy' /etc/init.d/bsbf-bonding-nft
+    && echo patched || echo unpatched
+  register: _bsbf_nftboot
+  changed_when: false
+
+- name: Patch the nft boot hook for cold boot
+  ansible.builtin.raw: >-
+    printf '%s' '{{ lookup('file', 'bsbf-bonding-nft') | b64encode }}'
+    | base64 -d > /etc/init.d/bsbf-bonding-nft
+    && chmod +x /etc/init.d/bsbf-bonding-nft
+  when: "'patched' not in _bsbf_nftboot.stdout"
+  changed_when: true
+
+- name: Prepare the nft table and enable BSBF
+  ansible.builtin.raw: |
+    modprobe nft_tproxy 2>/dev/null || true
+    nft list table ip bsbf_bonding >/dev/null 2>&1 || nft add table ip bsbf_bonding
+    bsbf-bonding --enable
+  register: _bsbf_enable
+  changed_when: true
+
+- name: Reset the endpoint cache and restart bsbf-mptcp
+  ansible.builtin.raw: |
+    : > /run/bsbf-mptcp-supported
+    : > /run/bsbf-mptcp-not-supported
+    : > /run/bsbf-mptcp-no-connectivity
+    /etc/init.d/bsbf-mptcp restart
+  changed_when: true
+
+- name: Wait for both MPTCP endpoints
+  ansible.builtin.raw: |
+    for i in $(seq 1 30); do
+      if ip mp e 2>/dev/null | grep -q 'dev {{ bsbf_sta_interface }}' \
+         && ip mp e 2>/dev/null | grep -q 'dev {{ bsbf_cellular_interface }}'; then
+        exit 0
+      fi
+      sleep 1
+    done
+    exit 1
+  changed_when: false
+
+- name: Report the live endpoint table
+  ansible.builtin.raw: ip mp e
+  register: _bsbf_endpoints
+  changed_when: false
+
+- name: Report the BSBF status
+  ansible.builtin.raw: bsbf-bonding --status
+  register: _bsbf_status
+  changed_when: false
+
+- name: Show the client state
+  ansible.builtin.debug:
+    msg:
+      - "endpoints:"
+      - "{{ _bsbf_endpoints.stdout_lines }}"
+      - "status: {{ _bsbf_status.stdout | trim }}"

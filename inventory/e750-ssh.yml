@@ -1,0 +1,23 @@
+---
+# SSH transport for the BSBF client. Run this from the host that owns the
+# E750's LAN link (x280 on the Hermes bench).
+#
+#   ansible-playbook -i inventory/e750-ssh.yml playbook-bsbf-client.yml \
+#     -e bsbf_server_ipv4=... -e bsbf_server_port=... -e bsbf_client_uuid=...
+#
+# The E750 has no Python, so playbook-bsbf-client.yml uses raw commands and
+# gather_facts: false. Keep inventory/hosts.yml (serial) as the recovery path.
+e750_ssh:
+  hosts:
+    e750:
+      ansible_connection: ssh
+      ansible_host: 192.168.8.1
+      ansible_user: root
+      ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+      ansible_ssh_common_args: >-
+        -o StrictHostKeyChecking=accept-new
+        -o UserKnownHostsFile=~/.ssh/known_hosts_e750
+        -o ConnectTimeout=10
+        -o ServerAliveInterval=5
+        -o ServerAliveCountMax=3
+      ansible_shell_type: sh

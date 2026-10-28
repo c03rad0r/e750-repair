@@ -1,0 +1,21 @@
+---
+# BSBF server transport. The server is a fleet VPS; the E750 client is separate.
+#
+#   ansible-playbook -i inventory/bsbf-servers.yml playbook-bsbf-server.yml
+#
+# The host is addressed over the FIPS mesh from the operator machine; the
+# `debian` user's key is in the operator ssh-agent. Do not commit private keys.
+all:
+  children:
+    bsbf_servers:
+      hosts:
+        hermes-nvme:
+          ansible_host: hermes-nvme.fips
+          ansible_user: debian
+          ansible_ssh_common_args: >-
+            -o StrictHostKeyChecking=accept-new
+            -o ConnectTimeout=10
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=3
+          ansible_become: true
+          ansible_become_method: sudo

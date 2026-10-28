@@ -1,0 +1,20 @@
+---
+# The role is disabled by default: installing a proxy server on a fleet relay is
+# an explicit action, never a side effect of a normal converge.
+bsbf_server_enabled: true
+
+bsbf_server_commit: "75a54685b94515a388bd8278a9586f1086f1dcee"
+bsbf_server_installer_sha256: "bc774d329d668f4de6dcf1ed1cbc13345003818f0fd1218f60935feff7981dae"
+bsbf_server_xray_install_commit: "e42df6a772e60dd7b058f852262c4dbeb0bc231d"
+bsbf_server_xray_version: "v26.10.21"
+
+bsbf_server_client_limit: 16
+bsbf_server_client_rate_mbps: 50
+bsbf_server_port_range: "16384:16400"
+
+bsbf_server_src_dir: "/usr/local/src/bsbf"
+bsbf_server_credentials_dir: "{{ playbook_dir }}/state/bsbf"
+bsbf_server_manage_ufw: true
+
+bsbf_server_required_distribution: "Debian"
+bsbf_server_required_major: "13"

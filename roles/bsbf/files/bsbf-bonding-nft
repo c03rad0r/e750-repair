@@ -1,0 +1,13 @@
+#!/bin/sh /etc/rc.common
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Chester A. Unal <chester.a.unal@arinc9.com>
+# Site fix: create the table and load nft_tproxy before the batch file's
+# destroy command runs, otherwise a cold boot fails to apply the rules.
+
+START=99
+
+boot() {
+	modprobe nft_tproxy 2>/dev/null
+	nft list table ip bsbf_bonding >/dev/null 2>&1 || nft add table ip bsbf_bonding
+	/usr/sbin/nft -f /usr/share/bsbf/bsbf_bonding.nft
+}

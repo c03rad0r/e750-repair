@@ -1,0 +1,39 @@
+# BSBF server — live capture 2026-10-28T21:02:54Z
+
+## host
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8): No such file or directory
+hermes
+Debian GNU/Linux 13 (trixie)
+6.12.113+deb13-cloud-amd64
+ 21:02:57 up 6 days, 21:22,  2 users,  load average: 0.17, 0.15, 0.11
+
+## client + listener
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8): No such file or directory
+16384 <redacted-uuid> 50
+LISTEN 0      4096                                           *:16384            *:*    users:(("xray",pid=3835828,fd=3))        
+  xray-bsbf-bonding@16384-<redacted-uuid>-50.service loaded active running Xray Service
+
+## mptcp + ufw
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8): No such file or directory
+add_addr_accepted 0 subflows 8 
+Status: active
+16384:16400/tcp            ALLOW       Anywhere                  
+16384:16400/tcp (v6)       ALLOW       Anywhere (v6)             
+inactive
+○ bsbf-mptcp-configuration.service - BSBF MPTCP configuration. Set subflow limit to 8. Disable blackhole timeout. Disable fallback to TCP.
+     Loaded: loaded (/usr/lib/systemd/system/bsbf-mptcp-configuration.service; enabled; preset: enabled)
+    Drop-In: /etc/systemd/system/bsbf-mptcp-configuration.service.d
+             └─override.conf
+     Active: inactive (dead) since Wed 2026-10-28 21:02:50 UTC; 11s ago
+ Invocation: c2faf677b3574bc6bf722d422eb3849c
+    Process: 3844589 ExecStart=/usr/bin/ip mptcp limits set subflows 8 (code=exited, status=0/SUCCESS)
+    Process: 3844590 ExecStart=/usr/sbin/sysctl net.mptcp.blackhole_timeout=0 (code=exited, status=0/SUCCESS)
+   Main PID: 3844590 (code=exited, status=0/SUCCESS)
+   Mem peak: 1.8M
+        CPU: 15ms
+
+
+## egress
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8): No such file or directory
+23.182.128.219
+server egress: bytes=10000000 time=0.209085s speed=47827438B/s

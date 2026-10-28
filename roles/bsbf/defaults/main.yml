@@ -1,0 +1,34 @@
+---
+# BSBF client defaults. The server credentials have no defaults: pass them in.
+bsbf_server_ipv4: ""
+bsbf_server_port: 0
+bsbf_client_uuid: ""
+
+bsbf_apn: "internet.eplus.de"
+bsbf_sta_interface: "phy1-sta0"
+bsbf_cellular_interface: "wwan0"
+bsbf_cellular_uci: "wwan1"
+bsbf_wifi_metric: 9
+bsbf_cellular_metric: 13
+bsbf_backup_interfaces:
+  - wwan0
+
+# Packages required for MBIM, MPTCP endpoint management, and the BSBF client.
+bsbf_packages:
+  - curl
+  - kmod-usb-net-cdc-mbim
+  - umbim
+  - ip-full
+  - kmod-ifb
+  - kmod-nf-tproxy
+  - kmod-nft-tproxy
+  - bsbf-bonding
+  - bsbf-quectel-usbnet
+  - bsbf-autoconf-cellular
+  - bsbf-autoconf-dhcp
+
+# The upstream MPTCP support probe (mptcpize + check.mptcp.dev) returns
+# "not using MPTCP" on this musl/ath79 build even though the kernel data path
+# works. The role replaces only that probe with a positive result; the actual
+# MPTCP connection is still verified end-to-end.
+bsbf_patch_mptcp_probe: true
