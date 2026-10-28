@@ -1,0 +1,26 @@
+---
+# Re-read the cal-only experiment without reinstalling or rebooting.
+#
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-cal-only-verify.yml
+#
+# A failed verify is caught and reported as the expected negative result; the
+# standalone verify role still fails loudly when used directly.
+
+- name: GL-E750 — verify the cal-only experiment
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Verify the result
+      block:
+        - name: Read the radio back
+          ansible.builtin.include_role:
+            name: verify_cal_only
+      rescue:
+        - name: Record the negative result
+          ansible.builtin.debug:
+            msg: >-
+              cal-only verify failed (expected if the theory is wrong). See the
+              ath10k/wifi evidence above; run playbook-cal-only-revert.yml
+              before any other experiment.

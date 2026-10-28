@@ -1,6 +1,6 @@
 # STATUS — what is verified, and what is not
 
-**Last updated: 2026-10-24**
+**Last updated: 2026-10-29**
 
 This repo was created in the middle of an active diagnosis. Read this before
 trusting anything else in it.
@@ -52,6 +52,21 @@ of the two boot signatures.
 from the target firmware through `ath10k_bmi_execute()`, not an errno the driver
 produced. Treating it as a driver-level error is a trap; see EVIDENCE §3.
 
+### 2026-10-29 — cal-only result (new)
+
+Installed **only** `cal-pci-0000:00:00.0.bin` (no `pre-cal-*`, no hotplug),
+rebooted, and read the device back:
+
+- firmware dir contains the `cal-pci` file and no `pre-cal` file;
+- dmesg is **identical to the baseline**: `-22`, `otp calibration failed: 2`,
+  **no `-122`**;
+- no 5 GHz radio: `radio0` only, one phy.
+
+This confirms the `-122` was a `pre-cal` artifact and that the cal file alone is
+**not sufficient**. The driver still fails at the EEPROM/board-id step
+(`bmi_id N/A`). The experiment was reverted to the clean baseline. Evidence:
+`evidence/caldata/2026-10-29_*`.
+
 **Do not treat the `caldata` role as a fix.** It is an unproven hypothesis whose
 file placement demonstrably *changed* the failure mode rather than resolving it.
 The extraction logic is sound and may still be a *necessary* step once the real
@@ -92,12 +107,11 @@ These parts are independent of whether the caldata theory is right:
 
 **The primary lead — answer this first:**
 
-0. **Is the `-122` caused by the `pre-cal-*` / `cal-*` file placement?** Placing
-   those files changes `ar->cal_mode` to `ATH10K_PRE_CAL_MODE_FILE`, which switches
-   the BMI board-id parameter the driver sends (`BMI_PARAM_GET_FLASH_BOARD_ID`
-   instead of `BMI_PARAM_GET_EEPROM_BOARD_ID`). Test: remove the files, reboot,
-   confirm the `-122` line disappears; re-add, reboot, confirm it returns. This is
-   a one-variable experiment and it is the cheapest decisive test available.
+0. **Answered in part (2026-10-29):** installing only `cal-pci-*` (no
+   `pre-cal-*`) produces **no `-122`**, so the `-122` is a `pre-cal` artifact.
+   The cal blob alone still leaves the original `-22` failure and no 5 GHz
+   radio. Next: the board ID/EEPROM/OTP path (`bmi_id N/A`), and a top-level
+   `cal-pci` run as a lower-value follow-up.
 
 Then:
 

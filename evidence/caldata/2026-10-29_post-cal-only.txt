@@ -1,0 +1,48 @@
+# cal-pci-only — post-install read-back 2026-10-28T23:46:49Z
+
+## firmware dir (cal-pci present, no pre-cal)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+-rw-r--r--    1 root     root          1024 Jun 29 12:59 board.bin
+-rw-r--r--    1 root     root          1088 Oct 28 23:44 cal-pci-0000:00:00.0.bin
+-rw-r--r--    1 root     root        212900 Jun 29 12:59 firmware-2.bin
+
+phy_count=1
+radio_keys:
+"radio0"
+minus122_count=0
+minus22_count=4
+
+## ath10k dmesg
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+[   27.061055] ath10k 6.15 driver, optimized for CT firmware, probing pci device: 0x50.
+[   27.094737] ath10k_pci 0000:00:00.0: enabling device (0000 -> 0002)
+[   27.103535] ath10k_pci 0000:00:00.0: pci irq legacy oper_irq_mode 1 irq_mode 0 reset_mode 0
+[   29.528977] ath10k_pci 0000:00:00.0: qca9887 hw1.0 target 0x4100016d chip_id 0x004000ff sub 0000:0000
+[   29.538622] ath10k_pci 0000:00:00.0: kconfig debug 0 debugfs 1 tracing 0 dfs 1 testmode 0
+[   29.549650] ath10k_pci 0000:00:00.0: firmware ver 10.1-ct-87-__fW-022-d8dab8e8 api 2 features wmi-10.x,has-wmi-mgmt-tx,mfp,peer-fixed-rate,txstatus-noack,wmi-10.x-CT,ratemask-CT,txrate-CT,get-temp-CT,tx-rc-CT,cust-stats-CT,retry-gt2-CT,txrate2-CT,beacon-cb-CT,wmi-block-ack-CT crc32 81827605
+[   30.160426] ath10k_pci 0000:00:00.0: board_file api 1 bmi_id N/A crc32 546cca0d
+[   30.202245] ath10k_pci 0000:00:00.0: failed to read device EEPROM at 0000
+[   30.209302] ath10k_pci 0000:00:00.0: failed to read calibration data from EEPROM: -22
+[   30.273400] ath10k_pci 0000:00:00.0: otp calibration failed: 2
+[   30.279468] ath10k_pci 0000:00:00.0: failed to run otp: -22 (download-cal-data)
+[   30.287055] ath10k_pci 0000:00:00.0: could not init core (-22)
+[   30.311805] ath10k_pci 0000:00:00.0: could not probe fw (-22)
+
+## pre-install baseline dmesg (captured by the role)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+[   27.061055] ath10k 6.15 driver, optimized for CT firmware, probing pci device: 0x50.
+[   27.094737] ath10k_pci 0000:00:00.0: enabling device (0000 -> 0002)
+[   27.103535] ath10k_pci 0000:00:00.0: pci irq legacy oper_irq_mode 1 irq_mode 0 reset_mode 0
+[   29.528977] ath10k_pci 0000:00:00.0: qca9887 hw1.0 target 0x4100016d chip_id 0x004000ff sub 0000:0000
+[   29.538622] ath10k_pci 0000:00:00.0: kconfig debug 0 debugfs 1 tracing 0 dfs 1 testmode 0
+[   29.549650] ath10k_pci 0000:00:00.0: firmware ver 10.1-ct-87-__fW-022-d8dab8e8 api 2 features wmi-10.x,has-wmi-mgmt-tx,mfp,peer-fixed-rate,txstatus-noack,wmi-10.x-CT,ratemask-CT,txrate-CT,get-temp-CT,tx-rc-CT,cust-stats-CT,retry-gt2-CT,txrate2-CT,beacon-cb-CT,wmi-block-ack-CT crc32 81827605
+[   30.160426] ath10k_pci 0000:00:00.0: board_file api 1 bmi_id N/A crc32 546cca0d
+[   30.202245] ath10k_pci 0000:00:00.0: failed to read device EEPROM at 0000
+[   30.209302] ath10k_pci 0000:00:00.0: failed to read calibration data from EEPROM: -22
+[   30.273400] ath10k_pci 0000:00:00.0: otp calibration failed: 2
+[   30.279468] ath10k_pci 0000:00:00.0: failed to run otp: -22 (download-cal-data)
+[   30.287055] ath10k_pci 0000:00:00.0: could not init core (-22)
+[   30.311805] ath10k_pci 0000:00:00.0: could not probe fw (-22)

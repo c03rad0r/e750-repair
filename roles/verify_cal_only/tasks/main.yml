@@ -1,0 +1,55 @@
+---
+# Read-back verification for the cal-only experiment. A green result requires
+# the 5 GHz radio to enumerate and the calibration failure to be gone.
+
+- name: Read ath10k messages
+  ansible.builtin.raw: dmesg > /tmp/e750-dmesg-after.txt; grep -i ath10k /tmp/e750-dmesg-after.txt > /tmp/e750-ath10k-after.txt; tail -40 /tmp/e750-ath10k-after.txt
+  register: _cal_dmesg
+  changed_when: false
+
+- name: Read wireless status
+  ansible.builtin.raw: wifi status
+  register: _cal_wifi
+  changed_when: false
+
+- name: Count enumerated radios
+  ansible.builtin.raw: iw dev > /tmp/e750-iw-after.txt; grep -c 'phy#' /tmp/e750-iw-after.txt
+  register: _cal_phy_count
+  changed_when: false
+  failed_when: false
+
+- name: Read the firmware directory
+  ansible.builtin.raw: ls -l /lib/firmware/ath10k/QCA9887/hw1.0/
+  register: _cal_fw
+  changed_when: false
+
+- name: Show the evidence
+  ansible.builtin.debug:
+    msg:
+      - "=== ath10k ==="
+      - "{{ _cal_dmesg.stdout_lines }}"
+      - "=== firmware dir ==="
+      - "{{ _cal_fw.stdout_lines }}"
+      - "=== phy count ==="
+      - "{{ _cal_phy_count.stdout | trim }}"
+      - "=== wifi status ==="
+      - "{{ _cal_wifi.stdout_lines }}"
+
+- name: Assert only the cal-pci file was installed
+  ansible.builtin.assert:
+    that:
+      - "'cal-pci-0000:00:00.0.bin' in _cal_fw.stdout"
+      - "'pre-cal-pci-0000:00:00.0.bin' not in _cal_fw.stdout"
+    fail_msg: "The cal-only state is wrong: {{ _cal_fw.stdout_lines }}"
+
+- name: Assert the 5 GHz radio initialized
+  ansible.builtin.assert:
+    that:
+      - "'-22' not in _cal_dmesg.stdout"
+      - "'-122' not in _cal_dmesg.stdout"
+      - "'radio1' in _cal_wifi.stdout"
+      - (_cal_phy_count.stdout | trim | int) >= 2
+    fail_msg: >-
+      The cal-only experiment did not bring up 5 GHz. See the ath10k and wifi
+      evidence above; do not report this as a fix.
+    success_msg: "5 GHz initialized with the cal-pci-only blob"

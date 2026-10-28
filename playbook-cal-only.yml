@@ -1,0 +1,72 @@
+---
+# Cal-pci-only experiment. Run from x280 (the host with the E750 LAN link):
+#
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-cal-only.yml
+#
+# This installs ONLY cal-pci-0000:00:00.0.bin, never pre-cal-*, then reboots and
+# reads the result back. A failed verify is the expected negative outcome if the
+# cal-only theory is wrong; it is printed, not hidden.
+
+- name: GL-E750 — cal-pci-only experiment
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  # A failed verify is the expected negative result; report it, do not abort.
+
+  tasks:
+    - name: Install the cal-only blob
+      ansible.builtin.include_role:
+        name: caldata_cal_only
+
+    - name: Reboot into the new firmware
+      ansible.builtin.raw: "sync; (sleep 1; reboot) >/dev/null 2>&1 &"
+      ignore_errors: true
+      changed_when: true
+
+    - name: Wait for the E750 SSH port to go down
+      ansible.builtin.wait_for:
+        host: 192.168.8.1
+        port: 22
+        delay: 5
+        timeout: 90
+        state: stopped
+      delegate_to: localhost
+      become: false
+      failed_when: false
+
+    - name: Wait for the E750 SSH port
+      ansible.builtin.wait_for:
+        host: 192.168.8.1
+        port: 22
+        delay: 15
+        timeout: 240
+        state: started
+      delegate_to: localhost
+      become: false
+
+    - name: Wait for the shell
+      ansible.builtin.raw: echo up
+      register: _cal_up
+      until: _cal_up.stdout | trim == 'up'
+      retries: 24
+      delay: 5
+      changed_when: false
+
+    - name: Verify the result
+      block:
+        - name: Read the radio back
+          ansible.builtin.include_role:
+            name: verify_cal_only
+      rescue:
+        - name: Record the negative result
+          ansible.builtin.debug:
+            msg: >-
+              cal-only verify failed (expected if the theory is wrong). Capture
+              the evidence and run playbook-cal-only-revert.yml before any
+              other experiment.
+
+    - name: Report the experiment
+      ansible.builtin.debug:
+        msg: >-
+          cal-only experiment finished. If verify failed, capture the evidence
+          and run playbook-cal-only-revert.yml before any other experiment.
