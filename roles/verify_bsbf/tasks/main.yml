@@ -1,0 +1,72 @@
+---
+# Read the BSBF client state back from the device. A green BSBF run that
+# leaves no endpoint or no proxy path must fail here.
+
+- name: Read the MPTCP endpoint table
+  ansible.builtin.raw: ip mp e
+  register: _vbsbf_ep
+  changed_when: false
+
+- name: Assert both WANs are MPTCP endpoints
+  ansible.builtin.assert:
+    that:
+      - "('dev ' ~ bsbf_sta_interface) in _vbsbf_ep.stdout"
+      - "('dev ' ~ bsbf_cellular_interface) in _vbsbf_ep.stdout"
+      - "('backup dev ' ~ bsbf_cellular_interface) in _vbsbf_ep.stdout"
+    fail_msg: >-
+      Expected {{ bsbf_sta_interface }} as a primary endpoint and
+      {{ bsbf_cellular_interface }} as backup; got:
+      {{ _vbsbf_ep.stdout_lines }}
+
+- name: Read the nftables table
+  ansible.builtin.raw: nft list table ip bsbf_bonding
+  register: _vbsbf_nft
+  changed_when: false
+
+- name: Assert the tproxy rules are installed
+  ansible.builtin.assert:
+    that:
+      - "'tproxy' in _vbsbf_nft.stdout"
+      - "'prerouting_mangle' in _vbsbf_nft.stdout"
+    fail_msg: "The BSBF tproxy table is missing or empty"
+
+- name: Read the xray process
+  ansible.builtin.raw: ps w | grep '[x]ray'
+  register: _vbsbf_xray
+  changed_when: false
+  failed_when: _vbsbf_xray.rc != 0
+
+- name: Read the BSBF status
+  ansible.builtin.raw: bsbf-bonding --status
+  register: _vbsbf_status
+  changed_when: false
+
+- name: Assert BSBF reports enabled
+  ansible.builtin.assert:
+    that:
+      - _vbsbf_status.stdout | trim == 'enabled'
+    fail_msg: "bsbf-bonding --status is {{ _vbsbf_status.stdout | trim }}"
+
+- name: Read the router egress through BSBF
+  ansible.builtin.raw: curl -s --max-time 20 https://ifconfig.me
+  register: _vbsbf_egress
+  changed_when: false
+  retries: 4
+  delay: 5
+  until: _vbsbf_egress.stdout | trim == bsbf_server_ipv4
+
+- name: Assert the egress is the BSBF server
+  ansible.builtin.assert:
+    that:
+      - _vbsbf_egress.stdout | trim == bsbf_server_ipv4
+    fail_msg: >-
+      Expected egress {{ bsbf_server_ipv4 }}; got
+      {{ _vbsbf_egress.stdout | trim }}. xray is not carrying the router's
+      traffic.
+
+- name: Show the verification evidence
+  ansible.builtin.debug:
+    msg:
+      - "endpoints: {{ _vbsbf_ep.stdout_lines }}"
+      - "egress: {{ _vbsbf_egress.stdout | trim }}"
+      - "status: {{ _vbsbf_status.stdout | trim }}"

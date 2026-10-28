@@ -1,0 +1,37 @@
+---
+# Configure the GL-E750 as a BSBF client.
+#
+#   ansible-playbook -i inventory/e750-ssh.yml playbook-bsbf-client.yml \
+#     -e bsbf_server_ipv4=23.182.128.219 \
+#     -e bsbf_server_port=16384 \
+#     -e bsbf_client_uuid=<uuid>
+#
+# Topology: eth0 = LAN 192.168.8.1/24; phy1-sta0 = WAN (hermes-lan 2.4 GHz STA);
+# wwan0 = WAN (Aldi Talk 4G via MBIM). The 4G subflow is marked backup because
+# the measured link is ~0.5 Mbps; the STA carries the aggregate.
+
+- name: GL-E750 — BSBF MPTCP client
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Assert the BSBF server credentials are present
+      ansible.builtin.assert:
+        that:
+          - bsbf_server_ipv4 | length > 0
+          - bsbf_server_port | int > 0
+          - bsbf_client_uuid | length > 0
+        fail_msg: >-
+          Pass -e bsbf_server_ipv4=... -e bsbf_server_port=... -e
+          bsbf_client_uuid=... (the uuid comes from the server's
+          bsbf-add-client, stored outside this repository).
+
+    - name: Apply the BSBF client role
+      ansible.builtin.include_role:
+        name: bsbf
+
+    - name: Verify from the device
+      ansible.builtin.include_role:
+        name: verify_bsbf

@@ -1,0 +1,16 @@
+---
+# Stand up the BSBF server on a fleet VPS.
+#
+#   ansible-playbook -i inventory/bsbf-servers.yml playbook-bsbf-server.yml
+#
+# The E750 client is configured by playbook-bsbf.yml. Client credentials are
+# written to state/bsbf/<host>.json on the controller (gitignored, mode 0600).
+
+- name: BSBF server on a Debian fleet VPS
+  hosts: bsbf_servers
+  gather_facts: true
+  become: true
+  any_errors_fatal: true
+  roles:
+    - role: bsbf_server
+      when: bsbf_server_enabled | bool

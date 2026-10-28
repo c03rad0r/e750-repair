@@ -1,0 +1,21 @@
+# BSBF failover — live capture 2026-10-28T21:03:09Z
+
+## disable the STA WAN
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+default via 10.134.159.149 dev wwan0 proto static metric 13 
+id 3 subflow backup dev wwan0 
+
+## LAN client through the E750 while the STA is down (1 MB)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+egress=23.182.128.219
+bytes=1000000 time=15.276010s speed=65462B/s
+
+## restore the STA WAN
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+default via 192.168.50.1 dev phy1-sta0 proto static src 192.168.50.123 metric 9 
+default via 10.134.159.149 dev wwan0 proto static metric 13 
+id 3 subflow backup dev wwan0 
+id 4 subflow dev phy1-sta0 
+enabled

@@ -1,0 +1,4 @@
+---
+bsbf_server_ipv4: ""
+bsbf_sta_interface: "phy1-sta0"
+bsbf_cellular_interface: "wwan0"

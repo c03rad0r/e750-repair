@@ -1,0 +1,6 @@
+---
+- name: Reload the BSBF MPTCP configuration
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: bsbf-mptcp-configuration
+    state: restarted

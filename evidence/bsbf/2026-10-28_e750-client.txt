@@ -1,0 +1,49 @@
+# GL-E750 BSBF client — live capture 2026-10-28T20:59:54Z
+
+## identity
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+glinet,gl-e750
+25.12.5
+ 20:59:55 up 8 min,  load average: 0.92, 1.05, 0.62
+
+## mptcp + routes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+1
+default via 192.168.50.1 dev phy1-sta0 proto static src 192.168.50.123 metric 9 
+default via 10.134.159.149 dev wwan0 proto static metric 13 
+id 2 subflow dev phy1-sta0 
+id 3 subflow backup dev wwan0 
+phy1-sta0
+wwan0
+wwan0
+
+## nft tproxy
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+	chain prerouting_mangle {
+		meta l4proto { tcp, udp } th dport 53 tproxy to 127.0.0.1:12345 meta mark set 0x00000001
+		fib daddr type != local meta l4proto { tcp, udp } tproxy to 127.0.0.1:12345 meta mark set 0x00000001
+	chain output_mangle {
+
+## bsbf status + egress
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+enabled
+23.182.128.219
+	"up": true,
+	"proto": "mbim",
+	"up": true,
+	"proto": "dhcp",
+
+## LAN client egress + 10 MB through the E750
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+egress=23.182.128.219
+bytes=10000000 time=3.617498s speed=2764341B/s
+
+## direct WAN throughput
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+wwan0: bytes=1891549 time=30.006634s speed=63049B/s
+phy1-sta0: bytes=5000000 time=2.355031s speed=2123158B/s

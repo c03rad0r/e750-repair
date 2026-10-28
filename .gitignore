@@ -5,3 +5,6 @@
 __pycache__/
 .ansible/
 out/
+
+# BSBF client credentials (port/UUID) are generated per deployment.
+state/bsbf/*.json

@@ -1,0 +1,242 @@
+---
+# Install a BSBF server (MPTCP + xray/VLESS) on a Debian fleet VPS.
+#
+# The upstream installer is invoked from a pinned commit and its mutable
+# download URLs are rewritten to that commit / a pinned Xray release. No BSBF
+# source is vendored into this repository.
+
+- name: Refuse to run on an unsupported platform
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == bsbf_server_required_distribution
+      - ansible_facts['distribution_major_version'] == bsbf_server_required_major
+      - ansible_facts['service_mgr'] == 'systemd'
+    fail_msg: >-
+      BSBF server needs {{ bsbf_server_required_distribution }}
+      {{ bsbf_server_required_major }} with systemd; got
+      {{ ansible_distribution }} {{ ansible_distribution_major_version }}
+      ({{ ansible_service_mgr }}).
+
+- name: Check the kernel exposes MPTCP
+  ansible.builtin.command: ip mptcp limits
+  register: _bsbf_mptcp
+  changed_when: false
+  failed_when: _bsbf_mptcp.rc != 0
+
+- name: Read free space on /
+  ansible.builtin.command: df -Pk /
+  register: _bsbf_df
+  changed_when: false
+
+- name: Require at least 5 GiB free
+  ansible.builtin.assert:
+    that:
+      - (_bsbf_df.stdout_lines[1].split()[3] | int) > (5 * 1024 * 1024)
+    fail_msg: "Less than 5 GiB free on /"
+
+- name: Ensure the pinned source directory exists
+  ansible.builtin.file:
+    path: "{{ bsbf_server_src_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Fetch the pinned BSBF server installer
+  ansible.builtin.get_url:
+    url: >-
+      https://raw.githubusercontent.com/bondingshouldbefree/bsbf-resources/{{
+      bsbf_server_commit }}/resources-server/bsbf-server-installer.sh
+    dest: "{{ bsbf_server_src_dir }}/bsbf-server-installer.sh"
+    checksum: "sha256:{{ bsbf_server_installer_sha256 }}"
+    mode: "0755"
+
+- name: Pin the installer's resource URL to the same commit
+  ansible.builtin.replace:
+    path: "{{ bsbf_server_src_dir }}/bsbf-server-installer.sh"
+    regexp: '^BSBF_RESOURCES=.*$'
+    replace: >-
+      BSBF_RESOURCES="https://raw.githubusercontent.com/bondingshouldbefree/bsbf-resources/{{
+      bsbf_server_commit }}"
+
+- name: Pin the Xray installer commit and release
+  ansible.builtin.replace:
+    path: "{{ bsbf_server_src_dir }}/bsbf-server-installer.sh"
+    regexp: '^curl -fsSL https://github\.com/XTLS/Xray-install/raw/main/install-release\.sh.*$'
+    replace: >-
+      curl -fsSL https://raw.githubusercontent.com/XTLS/Xray-install/{{
+      bsbf_server_xray_install_commit }}/install-release.sh | bash -s --
+      install --version {{ bsbf_server_xray_version }} >/dev/null 2>&1
+
+- name: Read the pinned installer from the target
+  ansible.builtin.slurp:
+    src: "{{ bsbf_server_src_dir }}/bsbf-server-installer.sh"
+  register: _bsbf_installer_raw
+
+- name: Verify the installer was pinned
+  ansible.builtin.assert:
+    that:
+      - bsbf_server_commit in (_bsbf_installer_raw.content | b64decode)
+      - bsbf_server_xray_install_commit in (_bsbf_installer_raw.content | b64decode)
+      - bsbf_server_xray_version in (_bsbf_installer_raw.content | b64decode)
+
+- name: Check the install marker
+  ansible.builtin.stat:
+    path: "/usr/local/etc/bsbf/.installed-{{ bsbf_server_commit }}"
+  register: _bsbf_marker
+
+- name: Install the BSBF server
+  ansible.builtin.command:
+    cmd: "{{ bsbf_server_src_dir }}/bsbf-server-installer.sh --client-limit {{ bsbf_server_client_limit }}"
+    chdir: "{{ bsbf_server_src_dir }}"
+  register: _bsbf_install
+  changed_when: true
+  when: not _bsbf_marker.stat.exists
+
+- name: Ensure the bsbf-mptcp-configuration drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/bsbf-mptcp-configuration.service.d
+    state: directory
+    mode: "0755"
+
+- name: Drop the sysctl that Debian 13's kernel does not provide
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/bsbf-mptcp-configuration.service.d/override.conf
+    mode: "0644"
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/usr/bin/ip mptcp limits set subflows 8
+      ExecStart=-/usr/sbin/sysctl net.mptcp.blackhole_timeout=0
+  notify: Reload the BSBF MPTCP configuration
+
+- name: Ensure the install-marker directory exists
+  ansible.builtin.file:
+    path: "/usr/local/etc/bsbf"
+    state: directory
+    mode: "0755"
+
+- name: Record the installed commit
+  ansible.builtin.copy:
+    dest: "/usr/local/etc/bsbf/.installed-{{ bsbf_server_commit }}"
+    content: "{{ bsbf_server_commit }}\n"
+    mode: "0644"
+
+- name: Read ufw status
+  ansible.builtin.command: ufw status
+  register: _bsbf_ufw
+  changed_when: false
+  failed_when: false
+
+- name: Open the BSBF client port range
+  ansible.builtin.command: "ufw allow {{ bsbf_server_port_range }}/tcp"
+  register: _bsbf_ufw_allow
+  when:
+    - bsbf_server_manage_ufw | bool
+    - _bsbf_ufw.rc == 0
+    - "'Status: active' in _bsbf_ufw.stdout"
+  changed_when: "'Skipping' not in _bsbf_ufw_allow.stdout"
+
+- name: Check for persisted client credentials
+  ansible.builtin.stat:
+    path: /etc/bsbf/client-credentials.json
+  register: _bsbf_cred_stat
+
+- name: Load persisted client credentials
+  ansible.builtin.slurp:
+    src: /etc/bsbf/client-credentials.json
+  register: _bsbf_cred_raw
+  when: _bsbf_cred_stat.stat.exists
+
+- name: Use persisted client credentials
+  ansible.builtin.set_fact:
+    _bsbf_client: "{{ _bsbf_cred_raw.content | b64decode | from_json }}"
+  when: _bsbf_cred_stat.stat.exists
+
+- name: Create the first BSBF client
+  ansible.builtin.command: "bsbf-add-client {{ bsbf_server_client_rate_mbps }}"
+  register: _bsbf_add
+  changed_when: true
+  no_log: true
+  when: not _bsbf_cred_stat.stat.exists
+
+- name: Parse the created client
+  ansible.builtin.set_fact:
+    _bsbf_client:
+      port: "{{ _bsbf_add.stdout.split()[0] | int }}"
+      uuid: "{{ _bsbf_add.stdout.split()[1] }}"
+      speed: "{{ bsbf_server_client_rate_mbps | int }}"
+  when: not _bsbf_cred_stat.stat.exists
+
+- name: Ensure /etc/bsbf exists
+  ansible.builtin.file:
+    path: /etc/bsbf
+    state: directory
+    mode: "0755"
+
+- name: Persist client credentials on the server
+  ansible.builtin.copy:
+    dest: /etc/bsbf/client-credentials.json
+    content: "{{ _bsbf_client | to_nice_json }}\n"
+    mode: "0600"
+  no_log: true
+  when: not _bsbf_cred_stat.stat.exists
+
+- name: Ensure the local credentials directory exists
+  ansible.builtin.file:
+    path: "{{ bsbf_server_credentials_dir }}"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+
+- name: Save client credentials on the controller
+  ansible.builtin.copy:
+    dest: "{{ bsbf_server_credentials_dir }}/{{ inventory_hostname }}.json"
+    content: "{{ _bsbf_client | to_nice_json }}\n"
+    mode: "0600"
+  delegate_to: localhost
+  become: false
+  no_log: true
+
+- name: List BSBF clients
+  ansible.builtin.command: bsbf-list-client
+  register: _bsbf_list
+  changed_when: false
+
+- name: Assert the client is registered
+  ansible.builtin.assert:
+    that:
+      - _bsbf_client.uuid in _bsbf_list.stdout
+      - (_bsbf_client.port | string) in _bsbf_list.stdout
+    fail_msg: "The BSBF client is not present in bsbf-list-client output"
+
+- name: Read listening sockets
+  ansible.builtin.command: ss -lnt
+  register: _bsbf_ss
+  changed_when: false
+
+- name: Assert the client port is listening
+  ansible.builtin.assert:
+    that:
+      - (":" ~ (_bsbf_client.port | string)) in _bsbf_ss.stdout
+    fail_msg: "Nothing is listening on the BSBF client port"
+
+- name: Check the BSBF xray instance
+  ansible.builtin.command: >-
+    systemctl is-active
+    xray-bsbf-bonding@{{ _bsbf_client.port }}-{{ _bsbf_client.uuid }}-{{ _bsbf_client.speed }}
+  register: _bsbf_active
+  changed_when: false
+  failed_when: false
+
+- name: Assert the BSBF xray instance is active
+  ansible.builtin.assert:
+    that:
+      - _bsbf_active.stdout == "active"
+    fail_msg: "The BSBF xray instance is not active"
+
+- name: Report the server and client port
+  ansible.builtin.debug:
+    msg:
+      - "BSBF server ready on {{ inventory_hostname }} ({{ ansible_host }})"
+      - "Client port: {{ _bsbf_client.port }} (TCP, ufw range {{ bsbf_server_port_range }})"
+      - "Credentials: {{ bsbf_server_credentials_dir }}/{{ inventory_hostname }}.json (0600)"

@@ -23,6 +23,17 @@ console — reproducibly, as Ansible, so any context window or machine can do it
 
 The radio repair itself remains **unsolved**.
 
+## BSBF bonding (separate workstream)
+
+The same unit also runs a **BSBF MPTCP client**: 4G (Aldi Talk) plus a 2.4 GHz
+STA to `hermes-lan`, with `eth0` as the LAN. The 4G is marked backup because the
+measured link is ~0.5 Mbps; the STA path carries ~22 Mbps. See
+[`docs/BSBF-BONDING.md`](docs/BSBF-BONDING.md) and the companion server role in
+[`docs/BSBF-SERVER.md`](docs/BSBF-SERVER.md).
+
+This does **not** change the radio-repair verdict above; it is a separate,
+additive role and playbook.
+
 ---
 
 ## The fault this was *intended* to fix (theory — see STATUS.md)

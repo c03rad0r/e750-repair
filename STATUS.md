@@ -5,6 +5,12 @@
 This repo was created in the middle of an active diagnosis. Read this before
 trusting anything else in it.
 
+> **BSBF bonding is a separate workstream (2026-10-28).** The E750 also runs a
+> BSBF MPTCP client with 4G + a 2.4 GHz STA WAN; see
+> [`docs/BSBF-BONDING.md`](docs/BSBF-BONDING.md) and
+> [`docs/BSBF-SERVER.md`](docs/BSBF-SERVER.md). It does not change the
+> radio-repair verdict in this file. The 5 GHz radio remains dead.
+
 ## ⚠️ The central claim is UNVERIFIED — and it is now the SECOND-most interesting thing here
 
 This repo was built on the theory that the E750's dead 5 GHz radio is caused by
