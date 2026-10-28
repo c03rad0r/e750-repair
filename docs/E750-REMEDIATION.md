@@ -1,9 +1,17 @@
 # GL-E750 remediation + BSBF IaC — plan and tracker
 
-Status: **IN PROGRESS.** PR #1 (BSBF IaC) merged at `01176a4`. The cal-only
-experiment ran on 2026-10-29 and was **negative** (same `-22`, no `-122`, no
-5 GHz); it was reverted. PR #2 carries the reproducible experiment and the
-negative result; the next lead is the board ID/EEPROM/OTP path.
+Status: **IN PROGRESS.** PR #1 (BSBF IaC) `01176a4`, PR #2 (cal-only negative)
+`8c1e246`, and PR #3 (operator access) `dad1ecd` are merged. The cal-only
+experiment was negative (same `-22`, no `-122`, no 5 GHz) and was reverted.
+Next: board ID/EEPROM/OTP; 4G diagnostics; serial cable (physical).
+
+## Execution log
+
+- 2026-10-29 — PR #1 merged `01176a4`: BSBF server/client IaC.
+- 2026-10-29 — cal-pci-only experiment: negative; reverted; PR #2 merged
+  `8c1e246`.
+- 2026-10-29 — T14 operator key added to Dropbear; host key verified; PR #3
+  merged `dad1ecd`.
 
 This is the canonical tracker for the E750 work.
 
@@ -28,11 +36,13 @@ physical steps (cable, SIM, antenna) and emergency recovery.
   metric 13). BSBF enabled; endpoints correct; egress `23.182.128.219`.
 - Firewall: `lan` zone → `wan`; `wwan1`/`wwan` in the WAN zone; masq on.
 - Space: 192 packages; 85.9 MB free on overlay.
-- Access: Dropbear has **1** authorized key (x280); `/root/.ssh/authorized_keys`
-  has 16; T14's documented key is not in Dropbear. Serial `/dev/ttyE750` on
-  x280 works but TX is marginal.
+- Access: Dropbear has **2** authorized keys (x280 + T14); T14 can SSH via
+  x280. The E750 host key after the 25.12.5 reflash is
+  `SHA256:wsNm…`; x280 and T14 agree. `/root/.ssh/authorized_keys` still has 16
+  keys that Dropbear does not read. Serial `/dev/ttyE750` on x280 works but TX
+  is marginal.
 - Screen/MCU: no MCU package or process; the OLED shows little.
-- PR #1 (BSBF client + server IaC) is **OPEN, MERGEABLE, CLEAN**, no CI checks.
+- PR #1 (BSBF client + server IaC) merged at `01176a4`.
 
 ## Merge mechanics
 
@@ -99,7 +109,7 @@ handler that would recreate both.
 - [x] Revert to the clean baseline (no cal files; baseline `-22` restored).
 - [ ] Next: top-level `cal-pci` as a one-variable follow-up; then the
       board ID/EEPROM/OTP and BMI read path (`bmi_id N/A`).
-- [ ] PR #2 + merge (the experiment, tests, docs, evidence).
+- [x] PR #2 merged at `8c1e246` (experiment, tests, docs, evidence).
 
 ## Phase 3 — serial and access hardening (P0)
 
@@ -116,7 +126,7 @@ handler that would recreate both.
       (`/dev/ttyE750` on x280, not hardcoded `/dev/ttyUSB3`).
 - [ ] Reconcile the 16 keys in `/root/.ssh/authorized_keys`; Dropbear does not
       read that file by default.
-- [x] PR #3 + merge (access role, docs, evidence).
+- [x] PR #3 merged at `dad1ecd` (access role, docs, evidence).
 
 ## Phase 4 — 4G, server, and path quality (P1)
 
