@@ -1,0 +1,17 @@
+# E750 operator-key access — live capture 2026-10-28T23:51:22Z
+
+## from T14 via x280
+ok
+dropbear_authorized_keys_lines=2
+-rw-------    1 root     root           204 Oct 28 23:51 /etc/dropbear/authorized_keys
+
+## authorized key fingerprints (public keys only)
+256 SHA256:peTTPMD0rXwv7e/+0PCs4UohxLSQrW2q3iiMzLO8Mrk tollgate-virtual-lab (ED25519)
+256 SHA256:1Nci9JaBmkMu8FuyBQmmq5wiS/DjOhKftUWNikRJkOE tollgate-virtual-lab (ED25519)
+
+## host key
+x280 sees: 256 SHA256:wsNmvgQcsnUvHo5kPY2L1qtdtH1Ys5KJSzWG7/WB0fU 192.168.8.1 (ED25519)
+T14 known_hosts: 192.168.8.1 ED25519 SHA256:wsNmvgQcsnUvHo5kPY2L1qtdtH1Ys5KJSzWG7/WB0fU
+
+## T14 key fingerprint
+256 SHA256:1Nci9JaBmkMu8FuyBQmmq5wiS/DjOhKftUWNikRJkOE tollgate-virtual-lab (ED25519)

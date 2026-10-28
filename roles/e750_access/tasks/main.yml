@@ -1,0 +1,45 @@
+---
+# Add public keys to the E750's Dropbear authorized_keys. Raw only: the target
+# has no Python. Public keys are not secret; private keys never leave the
+# controller.
+
+- name: Refuse to run without a key file
+  ansible.builtin.assert:
+    that:
+      - e750_authorized_key_files | length > 0
+    fail_msg: "Pass e750_authorized_key_files (public key paths on the controller)."
+
+- name: Validate the supplied public key files
+  ansible.builtin.assert:
+    that:
+      - lookup('file', item) is search('^(ssh-|ecdsa-|sk-)')
+      - not ("'" in lookup('file', item))
+    fail_msg: >-
+      {{ item }} does not look like a safe OpenSSH public key (expected ssh-/
+      ecdsa-/sk- and no single quote in the comment)
+  loop: "{{ e750_authorized_key_files }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Add each public key to Dropbear
+  ansible.builtin.raw: |
+    set -e
+    printf '%s\n' '{{ lookup('file', item) | trim }}' > /tmp/e750-key.pub
+    touch {{ e750_dropbear_keys }}
+    cat {{ e750_dropbear_keys }} /tmp/e750-key.pub | sort -u > /tmp/e750-authorized_keys
+    mv /tmp/e750-authorized_keys {{ e750_dropbear_keys }}
+    chmod 600 {{ e750_dropbear_keys }}
+    rm -f /tmp/e750-key.pub
+  loop: "{{ e750_authorized_key_files }}"
+  loop_control:
+    label: "{{ item }}"
+  changed_when: true
+
+- name: Read the authorized-key count
+  ansible.builtin.raw: wc -l < {{ e750_dropbear_keys }}
+  register: _e750_key_count
+  changed_when: false
+
+- name: Report the authorized-key count
+  ansible.builtin.debug:
+    msg: "Dropbear authorized_keys now has {{ _e750_key_count.stdout | trim }} line(s)"

@@ -103,17 +103,20 @@ handler that would recreate both.
 
 ## Phase 3 — serial and access hardening (P0)
 
+- [x] Add `roles/e750_access` + `playbook-e750-access.yml` (public keys only;
+      preserve existing keys; mode 0600).
+- [x] Add T14's public key to Dropbear: 2 keys now; T14 can SSH via x280.
+- [x] Verify the Dropbear host-key change after the reflash; x280 and T14 agree
+      on `SHA256:wsNm…`; stale T14 known_hosts entry removed, backup kept.
+- [x] Add `docs/E750-ACCESS.md`; evidence in
+      `evidence/access/2026-10-29_dropbear-keys.txt`.
 - [ ] Replace the FTDI clone with a genuine FTDI or CP2102; verify zero TX
-      corruption with `serial_wake.py` / repeated `echo`.
+      corruption with `serial_wake.py` / repeated `echo`. (physical)
 - [ ] Keep the udev `/dev/ttyE750` name; make the serial port inventory-driven
       (`/dev/ttyE750` on x280, not hardcoded `/dev/ttyUSB3`).
-- [ ] Add T14's public key to Dropbear's `/etc/dropbear/authorized_keys` (the
-      current file has only x280's key) or document x280 as the only Ansible
-      controller; reconcile the 16 keys in `/root/.ssh/authorized_keys`.
-- [ ] Add a `scripts/e750-add-authorized-key.sh` (public key only; no private
-      material) and docs.
-- [ ] Add `roles/e750_access` or a documented manual step; keep serial recovery.
-- [ ] PR + merge (code); the cable replacement is physical.
+- [ ] Reconcile the 16 keys in `/root/.ssh/authorized_keys`; Dropbear does not
+      read that file by default.
+- [x] PR #3 + merge (access role, docs, evidence).
 
 ## Phase 4 — 4G, server, and path quality (P1)
 

@@ -1,0 +1,5 @@
+---
+# Public keys to authorize for Dropbear (operator/controller access).
+# The role only adds keys; it never removes existing entries.
+e750_authorized_key_files: []
+e750_dropbear_keys: "/etc/dropbear/authorized_keys"
