@@ -1,0 +1,22 @@
+---
+# Authorize an operator public key for Dropbear on the E750.
+#
+# From x280 (the host with the E750 LAN link and an existing key):
+#
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-access.yml \
+#     -e '{"e750_authorized_key_files":["/tmp/t14.pub"]}'
+#
+# The role adds keys and preserves the existing ones. It never handles private
+# keys. Verify from T14 with:
+#   ssh -J x280 -i ~/.ssh/id_ed25519 root@192.168.8.1 'echo ok'
+
+- name: GL-E750 — operator key access
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Apply the access role
+      ansible.builtin.include_role:
+        name: e750_access
