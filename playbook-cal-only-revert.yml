@@ -1,0 +1,62 @@
+---
+# Revert the cal-only experiment to the clean baseline (no cal files).
+#
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-cal-only-revert.yml
+#
+# The pre-experiment firmware tree and art are in /tmp/e750-ath10k-backup and
+# /tmp/e750-art.bin on the E750. The baseline had no cal-pci/pre-cal files.
+
+- name: GL-E750 — revert the cal-only experiment
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Remove the cal-only and any pre-cal file
+      ansible.builtin.raw: |
+        rm -f /lib/firmware/ath10k/QCA9887/hw1.0/cal-pci-0000:00:00.0.bin
+        rm -f /lib/firmware/ath10k/QCA9887/hw1.0/pre-cal-pci-0000:00:00.0.bin
+        sync
+      changed_when: true
+
+    - name: Reboot to the baseline
+      ansible.builtin.raw: "sync; (sleep 1; reboot) >/dev/null 2>&1 &"
+      ignore_errors: true
+      changed_when: true
+
+    - name: Wait for the E750 SSH port
+      ansible.builtin.wait_for:
+        host: 192.168.8.1
+        port: 22
+        delay: 25
+        timeout: 240
+        state: started
+      delegate_to: localhost
+      become: false
+
+    - name: Wait for the shell
+      ansible.builtin.raw: echo up
+      register: _cal_up
+      until: _cal_up.stdout | trim == 'up'
+      retries: 24
+      delay: 5
+      changed_when: false
+
+    - name: Read the reverted ath10k signature
+      ansible.builtin.raw: dmesg > /tmp/e750-dmesg-revert.txt; grep -i ath10k /tmp/e750-dmesg-revert.txt > /tmp/e750-ath10k-revert.txt; tail -20 /tmp/e750-ath10k-revert.txt
+      register: _cal_dmesg
+      changed_when: false
+
+    - name: Read the reverted radios
+      ansible.builtin.raw: wifi status
+      register: _cal_wifi
+      changed_when: false
+
+    - name: Show the reverted evidence
+      ansible.builtin.debug:
+        msg:
+          - "=== ath10k ==="
+          - "{{ _cal_dmesg.stdout_lines }}"
+          - "=== radios ==="
+          - "{{ _cal_wifi.stdout_lines }}"

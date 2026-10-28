@@ -1,0 +1,83 @@
+---
+# All target commands use raw: the E750 has no Python, so normal Ansible
+# modules cannot run on it. The art partition is only ever read.
+
+- name: Read the board name
+  ansible.builtin.raw: cat /tmp/sysinfo/board_name
+  register: _cal_board
+  changed_when: false
+
+- name: Refuse to run on a different board
+  ansible.builtin.assert:
+    that:
+      - _cal_board.stdout | trim == caldata_expected_board
+    fail_msg: "Expected {{ caldata_expected_board }}; got {{ _cal_board.stdout | trim }}"
+
+- name: Read the partition table
+  ansible.builtin.raw: cat /proc/mtd
+  register: _cal_mtd
+  changed_when: false
+
+- name: Require the art partition
+  ansible.builtin.assert:
+    that:
+      - "'\"art\"' in _cal_mtd.stdout"
+    fail_msg: "No art partition in /proc/mtd"
+
+- name: Back up art, firmware, and the baseline dmesg
+  ansible.builtin.raw: |
+    set -e
+    if [ ! -d "{{ caldata_fw_backup }}" ]; then
+      cp -r /lib/firmware/ath10k "{{ caldata_fw_backup }}"
+    fi
+    dd if={{ caldata_art_mtd }} of={{ caldata_art_backup }} bs=4096 2>/dev/null
+    dmesg > {{ caldata_dmesg_before }}
+    ls -l {{ caldata_art_backup }} {{ caldata_fw_backup }}
+  changed_when: true
+
+- name: Extract the QCA9887 calibration blob from art
+  ansible.builtin.raw: |
+    set -e
+    dd if={{ caldata_art_mtd }} of={{ caldata_scratch }} bs=1 \
+       skip={{ caldata_offset }} count={{ caldata_length }} 2>/dev/null
+    test "$(wc -c < {{ caldata_scratch }})" -eq {{ caldata_length }}
+    hexdump -C {{ caldata_scratch }} > /tmp/e750-cal-hexdump.txt
+    head -2 /tmp/e750-cal-hexdump.txt
+  changed_when: true
+
+- name: Validate the blob header and per-device MAC
+  ansible.builtin.raw: |
+    set -e
+    hexdump -C {{ caldata_scratch }} > /tmp/e750-cal-hexdump.txt
+    grep -q '44 08 1b a8 04 01' /tmp/e750-cal-hexdump.txt
+    grep -qE '94 83 +c4 4d fc 3a' /tmp/e750-cal-hexdump.txt
+    echo validated
+  changed_when: false
+
+- name: Back up and remove any pre-cal file; back up an existing cal file
+  ansible.builtin.raw: |
+    set -e
+    mkdir -p "{{ ath10k_fw_dir }}"
+    if [ -e "{{ ath10k_fw_dir }}/{{ caldata_precal_name }}" ]; then
+      cp "{{ ath10k_fw_dir }}/{{ caldata_precal_name }}" "{{ caldata_fw_backup }}/"
+      rm -f "{{ ath10k_fw_dir }}/{{ caldata_precal_name }}"
+    fi
+    if [ -e "{{ ath10k_fw_dir }}/{{ caldata_pci_name }}" ]; then
+      cp "{{ ath10k_fw_dir }}/{{ caldata_pci_name }}" "{{ caldata_fw_backup }}/"
+    fi
+    echo cleaned
+  changed_when: true
+
+- name: Install only the cal-pci file
+  ansible.builtin.raw: |
+    set -e
+    cp "{{ caldata_scratch }}" "{{ ath10k_fw_dir }}/{{ caldata_pci_name }}"
+    chmod 644 "{{ ath10k_fw_dir }}/{{ caldata_pci_name }}"
+    test ! -e "{{ ath10k_fw_dir }}/{{ caldata_precal_name }}"
+    ls -l "{{ ath10k_fw_dir }}"
+    sha256sum "{{ ath10k_fw_dir }}/{{ caldata_pci_name }}"
+  changed_when: true
+
+- name: Flush filesystem buffers
+  ansible.builtin.raw: sync
+  changed_when: false

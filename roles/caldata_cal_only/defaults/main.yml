@@ -1,0 +1,24 @@
+---
+# Cal-only experiment for the QCA9887 5 GHz radio.
+#
+# The previous experiment installed BOTH pre-cal-pci-*.bin and cal-pci-*.bin.
+# pre-cal-* switches ath10k to ATH10K_PRE_CAL_MODE_FILE and is the likely
+# source of the new "failed to get board id: -122". This role installs only the
+# full-calibration file and never installs the hotplug handler.
+
+caldata_expected_board: "glinet,gl-e750"
+caldata_art_mtd: "/dev/mtd2"
+caldata_offset: 20480      # 0x5000
+caldata_length: 1088       # 0x440
+caldata_magic_hex: "44081ba80401"
+caldata_expected_mac_hex: "9483c44dfc3a"   # 94:83:c4:4d:fc:3a
+
+ath10k_bdf: "0000:00:00.0"
+ath10k_fw_dir: "/lib/firmware/ath10k/QCA9887/hw1.0"
+caldata_pci_name: "cal-pci-{{ ath10k_bdf }}.bin"
+caldata_precal_name: "pre-cal-pci-{{ ath10k_bdf }}.bin"
+
+caldata_scratch: "/tmp/e750-qca9887-cal.bin"
+caldata_art_backup: "/tmp/e750-art.bin"
+caldata_fw_backup: "/tmp/e750-ath10k-backup"
+caldata_dmesg_before: "/tmp/e750-dmesg-before.txt"
