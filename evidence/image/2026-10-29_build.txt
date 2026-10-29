@@ -1,0 +1,47 @@
+# E750 clean image build — 2026-10-29T10:05:29Z
+
+ImageBuilder: 25.12.5 ath79/nand (sha256 pinned in image/build.sh)
+Profile: glinet_gl-e750
+
+## artifact
+5a6fee118fb7876564007481e51da372556593968c83520b37bfd1939a977689  image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/bin/targets/ath79/nand/openwrt-25.12.5-ath79-nand-glinet_gl-e750-squashfs-sysupgrade.bin
+-rw-rw-r-- 1 c08rad0r c08rad0r 16609552 Oct 29 11:04 image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/bin/targets/ath79/nand/openwrt-25.12.5-ath79-nand-glinet_gl-e750-squashfs-sysupgrade.bin
+
+## package count
+188
+
+## BSBF/MPTCP/tproxy/diagnostics packages
+coreutils-stty - 9.9-r2
+curl - 8.23.0-r1
+ip-full - 6.18.0-r2
+kmod-ifb - 6.12.94-r1
+kmod-nf-tproxy - 6.12.94-r1
+kmod-nft-tproxy - 6.12.94-r1
+kmod-usb-net-cdc-mbim - 6.12.94-r1
+kmod-usb-net-qmi-wwan - 6.12.94-r1
+kmod-usb-serial-option - 6.12.94-r1
+picocom - 3.1-r5
+umbim - 2025.10.04~2939b7d0-r1
+uqmi - 2025.07.30~7914da43-r2
+wpad-basic-mbedtls - 2025.08.26~ca266cc2-r6
+
+## baked files (non-secret)
+-rw------- 1 c08rad0r c08rad0r  204 Jun 29 14:59 image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/etc/dropbear/authorized_keys
+-rwxrwxr-x 1 c08rad0r c08rad0r 2021 Jun 29 14:59 image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/etc/uci-defaults/99-e750-defaults
+
+## operator key fingerprints (public only)
+256 SHA256:peTTPMD0rXwv7e/+0PCs4UohxLSQrW2q3iiMzLO8Mrk tollgate-virtual-lab (ED25519)
+256 SHA256:1Nci9JaBmkMu8FuyBQmmq5wiS/DjOhKftUWNikRJkOE tollgate-virtual-lab (ED25519)
+
+## no-flash check
+build.sh only runs make image; no sysupgrade/mtd write. Device untouched.
+## BSBF/Xray packages
+bsbf-autoconf-cellular - 6
+bsbf-autoconf-dhcp - 6
+bsbf-bonding - 2026.08.29~60f0d20f-r1
+bsbf-client-web - 2026.08.29~60f0d20f-r1
+bsbf-mptcp - 2026.08.29~60f0d20f-r1
+bsbf-quectel-usbnet - 2026.08.29~60f0d20f-r1
+bsbf-rate-limiting - 2026.08.29~60f0d20f-r1
+mptcpize - 0.13-r2
+xray-core - 26.3.27-r1

@@ -98,6 +98,9 @@ def test_no_credentials_are_committed() -> None:
     for path in ROOT.rglob("*"):
         if not path.is_file() or ".git" in path.parts:
             continue
+        # Build trees (ImageBuilder/vendored host tools) are not repo content.
+        if "build" in path.parts:
+            continue
         if path.suffix not in {".yml", ".yaml", ".md", ".py", ".sh", ".txt"}:
             continue
         scan.append(path)
