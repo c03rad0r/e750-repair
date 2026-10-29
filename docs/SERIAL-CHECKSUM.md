@@ -114,3 +114,44 @@ python3 scripts/serial-exec.py /dev/ttyE750 -f flash.sh --allow-dangerous
 - [ ] ZMODEM file-transfer smoke test (`sz`/`rz`).
 - [ ] Use the checksummed channel for the 5 GHz board-ID/EEPROM experiments.
 - [ ] Add a checksummed U-Boot `loady` runbook.
+
+## Wired into Ansible (2026-10-30)
+
+The checksum path is now part of the `serial_console` connection plugin, so it
+applies to every serial task, not just manual runs:
+
+- `connection_plugins/serial_console.py` base64-encodes each command, sends the
+  expected SHA-256, and the device runs it only if the payload hashes correctly
+  (`rc=97` on mismatch, which triggers a retry).
+- The old echo check remains as a fallback when `base64`/`sha256sum` are not
+  installed or the command is too long for the console line discipline.
+- `inventory/hosts.yml` sets `ansible_serial_verify_checksum: true` and uses
+  `ansible_shell_type: sh`.
+- `playbook-e750-serial-check.yml` is the preflight: `uname -a` + `free -m`
+  over the checksummed console.
+
+Also fixed while wiring it: the plugin's `DOCUMENTATION` used bare strings under
+`vars:`, which current Ansible rejects; each is now `- name: ...`, and the plugin
+returns bytes from `exec_command` as Ansible expects.
+
+```bash
+ssh x280
+cd ~/e750-repair
+ansible-playbook -i inventory/hosts.yml playbook-e750-serial-check.yml \
+  -e device_serial_port=/dev/ttyE750 -e device_serial_baud=115200
+```
+
+## Current reliability (2026-10-30)
+
+The cable was re-soldered and reached **96/100** clean commands. After the
+enclosure was closed it regressed to **1/20**, then **0/10**, and on
+2026-10-30 the console returned **0/5 with empty output** — no bytes at all.
+
+That is no longer a bit-flip problem the checksum can paper over: the link is
+down. The checksum channel is implemented and unit-tested, but it cannot be
+verified end-to-end until the connector/cable is repaired. SSH over `eth0`
+remains the working path for configuration; the console is required only for
+U-Boot/flash recovery.
+
+Do not schedule a flash until `serial-tx-test.py` reports clean results again
+and `playbook-e750-serial-check.yml` passes.

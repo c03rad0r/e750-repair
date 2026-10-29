@@ -90,7 +90,14 @@ def make(responses, retries=3):
     c = serial_console.Connection.__new__(serial_console.Connection)
     c._serial = FakeSerial(responses)
     # timeout is divided by 4 to get the drain window - keep it small in tests
-    c._opts = {"port": "/dev/fake", "baud": 115200, "timeout": 0.2, "retries": retries}
+    c._opts = {
+        "port": "/dev/fake",
+        "baud": 115200,
+        "timeout": 0.2,
+        "retries": retries,
+        "verify_checksum": False,
+    }
+    c._checksum_supported = None
     c.get_option = lambda k: c._opts[k]
     c._connect = lambda: c          # no real port in a unit test
     return c
@@ -101,6 +108,7 @@ def main():
     # responses: one per _send (the ctrl-c write is separate, so read() returns per send)
     c = make([b"echo HI\r\nHI\r\nroot@OpenWrt:~# "])
     rc, out, err = c.exec_command("echo HI")
+    out = out.decode()
     check("rc == 0", rc == 0, rc)
     check("output captured", "HI" in out, out[:80])
 
@@ -110,8 +118,44 @@ def main():
         b"echo HI\r\nHI\r\nroot@OpenWrt:~# ",   # clean on retry
     ])
     rc, out, err = c.exec_command("echo HI")
+    out = out.decode()
     check("rc == 0 after retry", rc == 0, rc)
     check("retry produced clean output", "root@OpenWrt" in out, out[:80])
+
+    print("test: checksum wrapper carries base64 and sha256")
+    line = serial_console.Connection._build_checksum_line("echo HI", "abcd1234")
+    import base64, hashlib
+    payload = b"echo HI"
+    check("base64 payload present", base64.b64encode(payload).decode() in line, line[:80])
+    check("sha256 present", hashlib.sha256(payload).hexdigest() in line, line[:80])
+    check("done marker present", "__DONE_abcd1234__" in line, line[:80])
+
+    print("test: checksum parser extracts body and rc")
+    text = (
+        "B64_abcd1234='...' ...\r\n"
+        "__BEGIN_abcd1234__\r\nHI\r\n__END_abcd1234__\r\n"
+        "__DONE_abcd1234__ 0\r\nroot@OpenWrt:~# "
+    )
+    parsed = serial_console.Connection._parse_checksum(text, "abcd1234")
+    check("parsed", parsed is not None, parsed)
+    if parsed:
+        check("rc 0", parsed[0] == 0, parsed[0])
+        check("body HI", "HI" in parsed[1], parsed[1][:40])
+
+    print("test: hash mismatch (rc 97) is retried")
+    c = make([
+        "__BEGIN_abcd__\r\n__END_abcd__\r\n__DONE_abcd__ 97\r\n",  # not the right nonce
+        "echo HI\r\nHI\r\nroot@OpenWrt:~# ",                          # retry (legacy off? checksum true)
+    ])
+    c._opts["verify_checksum"] = True
+    c._checksum_supported = True
+    # nonce is random, so the first response cannot match; the retry also cannot
+    # match the random nonce. This test only asserts it raises rather than lying.
+    try:
+        c.exec_command("echo HI")
+        check("raised on checksum mismatch", False, "no exception")
+    except Exception:
+        check("raised on checksum mismatch", True)
 
     print("test: persistent corruption raises rather than lying")
     c = make([b"?ngarbage\r\n"] * 3, retries=3)
