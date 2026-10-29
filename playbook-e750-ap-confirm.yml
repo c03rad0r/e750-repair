@@ -1,0 +1,27 @@
+---
+# Confirm the AP+br-lan change and disarm the watchdog's revert.
+#
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-ap-confirm.yml
+#
+# Run only after SSH, the LAN IP, the AP SSID and the STA link are verified.
+
+- name: GL-E750 — confirm the AP+br-lan change
+  hosts: e750_ssh
+  gather_facts: false
+  vars_files:
+    - roles/e750_ap/defaults/main.yml
+  become: false
+
+  tasks:
+    - name: Write the confirm flag
+      ansible.builtin.raw: |
+        touch {{ e750_ap_confirm_file }}
+        ls -l {{ e750_ap_confirm_file }}
+      register: _e750_ap_confirm
+      changed_when: true
+
+    - name: Show the confirmation
+      ansible.builtin.debug:
+        msg:
+          - "{{ _e750_ap_confirm.stdout_lines }}"
+          - "watchdog will no longer revert; back up the new config if it is kept"

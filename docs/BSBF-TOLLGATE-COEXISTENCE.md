@@ -82,20 +82,22 @@ The earlier TollGate no-go over-weighted the dead 5 GHz radio. The truths are:
 
 Goal: a working captive portal with no BSBF running, on the same unit.
 
-### 2a. `br-lan` migration (config, reversible)
+### 2a. `br-lan` migration (config, reversible) — DONE/LIVE
 
-- [ ] Add a `br-lan` bridge containing `eth0` + the AP interface; move the LAN
+- [x] Add a `br-lan` bridge containing `eth0` + the AP interface; move the LAN
       IP/DHCP to `br-lan`.
-- [ ] Add `phy1-ap0` (`mode: ap`) on the same channel as the STA (channel 11),
-      with a dedicated SSID (e.g. `TollGate-E750`), WPA2, and `isolate` as
-      appropriate for a portal.
-- [ ] Keep `phy1-sta0` as the WAN (`wwan`) with metric 9.
-- [ ] Firewall: `lan` zone = `br-lan`; WAN zone = `wwan`/`wwan1`; masq on;
-      forwarding `lan -> wan`.
-- [ ] Rollback: restore `eth0`-only LAN and disable the AP; keep a config
-      archive and the serial console path.
-- [ ] Measure: AP association, DHCP, DNS, NAT, and AP+STA throughput with a
-      client on the portal SSID (expect roughly half the STA backhaul or less).
+- [x] Add `phy1-ap0` (`mode: ap`) on the same channel as the STA (channel 11),
+      SSID `TollGate-E750`, open (portal), `isolate=1`.
+- [x] Keep `phy1-sta0` as the WAN (`wwan`) with metric 9.
+- [x] Firewall: `lan` zone = `br-lan`; WAN zone = `wwan`/`wwan1`; masq on;
+      forwarding `lan -> wan`; firewall reloaded.
+- [x] Rollback: `playbook-e750-ap-rollback.yml` + watchdog; tested (the first
+      attempt reverted cleanly to `eth0`).
+- [x] Measure: client scan sees the AP, association succeeds, ping to
+      192.168.8.1 works; DHCP/DNS/NAT/throughput are the next test.
+- [x] Fixes: unique AP MAC, `beacon_int=100`, `dtim_period=2`, full
+      `wifi down`/`wifi up`. Evidence `evidence/ap/2026-10-29_ap-sta.txt`.
+      PR #17.
 
 ### 2b. TollGate install (no BSBF)
 

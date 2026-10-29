@@ -245,8 +245,12 @@ handler that would recreate both.
 - [x] New separate-first tracker:
       `docs/BSBF-TOLLGATE-COEXISTENCE.md` (Phase 0–6, implementation queue,
       PR order, rollback and acceptance criteria).
-- [ ] Implement Phase 2/3 of that tracker: `br-lan` + AP, TollGate standalone,
-      then the combined mode. Each as a PR, each with a tested rollback.
+- [x] Implement Phase 2a: `br-lan` + 2.4 GHz AP+STA
+      (`roles/e750_ap`, watchdogs, confirm/rollback). Client scan, association
+      and ping verified; DHCP/DNS/nft are the next TollGate test. Evidence
+      `evidence/ap/2026-10-29_ap-sta.txt`; docs `docs/E750-AP.md`. PR #17.
+- [ ] Implement Phase 2b/3: TollGate standalone, then the combined mode. Each
+      as a PR, each with a tested rollback.
 - [ ] Revisit the 5 GHz repair separately; it is not a prerequisite for AP+STA.
 
 ## Phase 9 — monitoring, acceptance, and final merge

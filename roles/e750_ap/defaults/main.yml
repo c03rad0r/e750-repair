@@ -1,0 +1,21 @@
+---
+# AP+STA on the single 2.4 GHz radio, plus a br-lan bridge for the LAN.
+# The STA (phy1-sta0 -> wwan) stays the uplink; the AP joins br-lan.
+e750_ap_ssid: "TollGate-E750"
+e750_ap_encryption: "none"        # none (portal) or psk2/psk
+e750_ap_key: ""                   # required only for psk2/psk; no default secret
+e750_ap_isolate: "1"
+e750_ap_channel: "11"             # must match the STA channel
+# A unique MAC for the AP vif; the STA keeps the radio's permanent MAC.
+# Locally administered; override per unit if it collides.
+e750_ap_macaddr: "02:83:c4:4d:fc:3b"
+e750_ap_beacon_int: "100"
+e750_ap_dtim_period: "2"
+e750_ap_lan_ip: "192.168.8.1"
+e750_ap_lan_netmask: "255.255.255.0"
+
+# Safety net: if the operator does not confirm within this window, the
+# watchdog restores the pre-change network/wireless/firewall config.
+e750_ap_watchdog_seconds: 600
+e750_ap_confirm_file: "/tmp/e750-ap-confirmed"
+e750_ap_backup_dir: "/tmp/e750-ap-backup"
