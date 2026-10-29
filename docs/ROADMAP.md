@@ -1,7 +1,7 @@
 # E750 / BSBF / TollGate — remaining roadmap
 
 Status: **combined mode working; remaining work is hardware/decision-gated.**
-Default branch: `felixfelix-bot/e750-repair:main` (all PRs #1–#25 merged).
+Default branch: `felixfelix-bot/e750-repair:main` (all work merged via PRs; no open PRs).
 Tracker: [`E750-REMEDIATION.md`](E750-REMEDIATION.md) and
 [`BSBF-TOLLGATE-COEXISTENCE.md`](BSBF-TOLLGATE-COEXISTENCE.md).
 
