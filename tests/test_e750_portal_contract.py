@@ -66,10 +66,12 @@ def test_docs_record_the_result_and_rollback() -> None:
         "10.0.0.1",
         "TollGate v0.6.0 daemon started successfully",
         "nodogsplash",
-        "500",
+        "200",
+        "10.0.0.100",
+        "post-auth",
         "rolled back",
         "evidence/portal/2026-10-29_bridge-test.txt",
-        "Do not leave the open AP running without enforcement",
+        "Do not leave the open AP running without working enforcement",
     ):
         assert needle in doc, needle
 

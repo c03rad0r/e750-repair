@@ -22,10 +22,26 @@ the management LAN and the portal shared `br-lan`.
   `config_ok`, `network_ok`, `wallet_ok`, mint probes succeeded, and the AP/STA
   stayed up (unlike the earlier `br-lan` attempt).
 - Portal SPA at `http://10.0.0.1:2051/splash.html` returned **200**.
-- `nodogsplash` on :2050 returned **500** and reported
-  `Managed IP range: 0.0.0.0/0`; adding `gatewayip`/`gatewaymask` did not fix it.
-- No independent client association/DHCP test was possible: the controller's
-  WiFi adapter is managed and drops a test vif.
+- `nodogsplash` on :2050 returned **500 when requested from the gateway itself**.
+  That was a false alarm: a real client on `br-portal` gets **200**. Setting
+  `gatewayiprange 10.0.0.0/24` / `gatewayaddress 10.0.0.1` fixed the
+  `Managed IP range: 0.0.0.0/0` status.
+
+### Client test (veth, 2026-10-29)
+
+A veth pair + network namespace provided a real client (`10.0.0.100/24`,
+default via 10.0.0.1):
+
+- splash `http://10.0.0.1:2050/` → **200**, redirects to the TollGate portal;
+- portal `http://10.0.0.1:2051/splash.html` → **200**;
+- `ndsctl` sees the client (IP/MAC);
+- pre-auth internet is blocked (ping and HTTP fail), as intended;
+- `ndsctl auth 10.0.0.100` succeeds, but **post-auth internet still fails**
+  (ping/HTTP blocked) both with BSBF enabled and with BSBF stopped.
+
+The remaining blocker is the nodogsplash mark/fw4 forwarding interaction, not
+the AP, the bridge, or the TollGate daemon. Evidence:
+`evidence/portal/2026-10-29_client-veth.txt`.
 
 Because the AP is open and `portal -> wan` forwarding exists, leaving it without
 working portal enforcement would be an open gateway. The role was therefore
@@ -47,13 +63,13 @@ LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-portal-r
 
 ## Next
 
-1. Fix the nodogsplash splash/Managed-IP-range issue, or use a minimal redirect
-   page to `http://10.0.0.1:2051/splash.html`.
-2. Test association, DHCP, splash and post-auth from a phone or a dedicated
-   client; capture the lease and the portal flow.
-3. Re-apply the role, then decide standalone (4G or STA WAN) vs combined with
-   BSBF.
-4. Do not leave the open AP running without enforcement.
+1. Fix post-auth forwarding: inspect the `ndsNET`/`ndsAUT` marks and the fw4
+   `forward_portal`/`srcnat_wan` path; confirm whether `ndsctl auth` sets the
+   mark for existing/new flows. Test with a real client after `ndsctl auth`.
+2. Re-test with BSBF off and on; the failure reproduced in both, so start with
+   the standalone path.
+3. Then re-apply the role and decide standalone vs combined.
+4. Do not leave the open AP running without working enforcement.
 
 ## Caveats
 

@@ -1,0 +1,23 @@
+# E750 portal client test — veth client 2026-10-29
+
+## setup
+- portal role applied: br-portal 10.0.0.1/24, phy1-ap0, eth0 192.168.8.1 untouched
+- nodogsplash gatewayiprange 10.0.0.0/24, gatewayaddress 10.0.0.1, webroot /etc/nodogsplash/htdocs
+- package redirect splash restored; portal uhttpd on 2051
+- client: veth pair, netns, 10.0.0.100/24, default via 10.0.0.1 (kmod-veth installed)
+
+## results
+- splash 2050 from the client: HTTP 200, redirect to the TollGate portal
+- portal 2051 /splash.html: HTTP 200
+- ndsctl sees the client (ip 10.0.0.100, mac, active)
+- pre-auth internet: blocked (ping 1.1.1.1 0/1, curl example.com 000)
+- ndsctl auth 10.0.0.100: success
+- post-auth internet: still blocked (ping 0/2, curl example.com 000) with BSBF enabled and with BSBF disabled
+- firewall: forward_portal accepts to wan, srcnat_wan masquerade present; ndsNET has mark-based drop/accept
+
+## conclusion
+- the earlier 2050=500 was a request from the gateway itself; a real client gets 200.
+- the captive-portal front door and TollGate SPA work from a client.
+- post-auth forwarding does not recover after ndsctl auth; this is the remaining blocker
+  (nodogsplash mark/fw4 forwarding interaction), not the AP or the TollGate daemon.
+- rolled back for safety; BSBF healthy.
