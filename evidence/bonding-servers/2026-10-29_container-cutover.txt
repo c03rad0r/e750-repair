@@ -1,0 +1,56 @@
+# BSBF container on the OMR host — 2026-10-29
+
+## layout
+```text
+Hetzner 167.235.218.44 (Debian 13.7 arm64, OMR kernel 6.18.41)
+  host: OMR (omr.service, xray.service)
+  container bsbf1: 10.77.0.2 on bsbfbr0 10.77.0.1/30
+  published TCP 16384-16400 (16383 not published)
+```
+
+## apply
+```text
+playbook-bonding-servers.yml --limit hermes-hel1-host,hermes-hel1
+hermes-hel1-host: ok=36 changed=11 failed=0
+hermes-hel1:      ok=33 changed=14 failed=0
+```
+
+## verify
+```text
+OMR: active, active
+container: running
+BSBF: 16384-16400 -> 10.77.0.2
+16384 open from the controller; 16383 closed
+```
+
+## second apply (idempotency)
+```text
+hermes-hel1-host: changed=1 (nft re-apply)
+hermes-hel1:      changed=3 (daemon reload/handlers)
+```
+
+## E750 cutover
+```text
+egress: 167.235.218.44
+endpoints: phy1-sta0 subflow + wwan0 backup
+server connections: 145.224.83.47 -> 10.77.0.2:16384
+                    176.0.40.218 -> 10.77.0.2:16384
+connect latency: 7-17 ms (was 15-385 ms via Houston)
+```
+
+## OMR untouched
+```text
+omr.service active, xray.service active
+65500 listening
+MT6000 path egress 167.235.218.44 unchanged
+```
+
+## rollback + re-apply (rebuild test)
+
+```text
+rollback:  container stopped, nft table + forward rules removed, OMR active
+           E750 egress: empty (expected, no server)
+re-apply:  rootfs kept, container restarted, rules re-installed
+           E750 egress: 167.235.218.44 after ~30 s
+health:    RESULT OK
+```

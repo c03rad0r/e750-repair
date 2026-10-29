@@ -1,0 +1,72 @@
+---
+# Remove the BSBF container and its nft rules. OMR is not touched.
+#
+#   ansible-playbook -i inventory/bsbf-servers.yml playbook-bonding-servers-rollback.yml
+#
+# Set -e bsbf_container_remove_rootfs=true to delete the rootfs as well.
+
+- name: Roll back the BSBF container
+  hosts: bsbf_container_hosts
+  gather_facts: false
+  become: true
+  any_errors_fatal: true
+  tasks:
+    - name: Stop and disable the container
+      ansible.builtin.systemd:
+        name: systemd-nspawn@bsbf1.service
+        state: stopped
+        enabled: false
+        daemon_reload: true
+      failed_when: false
+
+    - name: Stop and disable the bridge unit
+      ansible.builtin.systemd:
+        name: bsbf-net.service
+        state: stopped
+        enabled: false
+        daemon_reload: true
+      failed_when: false
+
+    - name: Remove the forward rules
+      ansible.builtin.shell: |
+        for handle in $(nft -a list chain inet omr forward 2>/dev/null \
+          | awk '/bsbf container/ {print $NF}'); do
+          nft delete rule inet omr forward handle "$handle" 2>/dev/null || true
+        done
+      changed_when: true
+
+    - name: Remove the NAT table
+      ansible.builtin.command: nft delete table ip bsbf_nat
+      failed_when: false
+      changed_when: true
+
+    - name: Remove the nft file and the nspawn settings
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/nftables/custom.d/bsbf.nft
+        - /etc/systemd/nspawn/bsbf1.nspawn
+        - /etc/systemd/system/systemd-nspawn@bsbf1.service.d/10-bsbf.conf
+        - /etc/systemd/system/bsbf-net.service
+        - /usr/local/sbin/bsbf-net
+        - /usr/local/sbin/bsbf-nft-apply
+
+    - name: Remove the bridge
+      ansible.builtin.command: ip link del bsbfbr0
+      failed_when: false
+      changed_when: true
+
+    - name: Remove the rootfs
+      ansible.builtin.command: rm -rf /var/lib/machines/bsbf1
+      when: bsbf_container_remove_rootfs | default(false) | bool
+      changed_when: true
+
+    - name: Assert OMR is untouched
+      ansible.builtin.command: systemctl is-active omr.service xray.service
+      register: _omr_after
+      changed_when: false
+
+    - name: Show the OMR state
+      ansible.builtin.debug:
+        msg: "OMR after rollback: {{ _omr_after.stdout_lines | join(', ') }}"

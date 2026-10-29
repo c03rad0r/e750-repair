@@ -1,0 +1,63 @@
+---
+# Provision both bonding-server types in parallel.
+#
+#   ansible-playbook -i inventory/bsbf-servers.yml playbook-bonding-servers.yml
+#
+# Order matters: the container must exist before Ansible connects to it.
+# The OMR health play never mutates the host.
+
+- name: BSBF container on the OMR host
+  hosts: bsbf_container_hosts
+  gather_facts: true
+  become: true
+  any_errors_fatal: true
+  vars:
+    bsbf_container_authorized_keys:
+      - "{{ bsbf_container_controller_key }}"
+  roles:
+    - role: bsbf_container
+      when: bsbf_container_enabled | bool
+
+- name: BSBF server inside the container
+  hosts: bsbf_servers
+  gather_facts: true
+  become: true
+  any_errors_fatal: true
+  roles:
+    - role: bsbf_server
+      when: bsbf_server_enabled | bool
+
+- name: OMR stays healthy
+  hosts: mptcp_servers
+  gather_facts: false
+  become: true
+  any_errors_fatal: true
+  tasks:
+    - name: Read the OMR units
+      ansible.builtin.command: systemctl is-active omr.service xray.service
+      register: _omr_units
+      changed_when: false
+
+    - name: Assert OMR is still active
+      ansible.builtin.assert:
+        that:
+          - _omr_units.stdout_lines | length == 2
+          - _omr_units.stdout_lines | reject('equalto', 'active') | list | length == 0
+        fail_msg: "OMR changed state: {{ _omr_units.stdout_lines }}"
+
+    - name: Read the OMR listeners
+      ansible.builtin.command: ss -lnt
+      register: _omr_ports
+      changed_when: false
+
+    - name: Assert the OMR endpoint is still listening
+      ansible.builtin.assert:
+        that:
+          - "':65500' in _omr_ports.stdout"
+        fail_msg: "The OMR endpoint on 65500 is gone"
+
+    - name: Show the parallel layout
+      ansible.builtin.debug:
+        msg:
+          - "OMR: {{ _omr_units.stdout_lines | join(', ') }} on 65000-65535"
+          - "BSBF container: 10.77.0.2, published 16384-16400"

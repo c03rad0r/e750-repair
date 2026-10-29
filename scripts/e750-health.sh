@@ -4,6 +4,10 @@
 # healthy. 5 GHz is a known-dead warning, not a failure.
 set -u
 
+SERVER_IP="${SERVER_IP:-}"
+if [ -z "$SERVER_IP" ] && [ -r /etc/e750/expected-egress ]; then
+	SERVER_IP=$(cat /etc/e750/expected-egress)
+fi
 SERVER_IP="${SERVER_IP:-23.182.128.219}"
 QUIET=0
 [ "${1:-}" = "--quiet" ] && QUIET=1

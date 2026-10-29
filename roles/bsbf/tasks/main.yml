@@ -147,6 +147,15 @@
     grep -n 'tproxy-bypass.sh' /etc/init.d/bsbf-bonding-nft
   changed_when: true
 
+- name: Record the expected BSBF egress
+  ansible.builtin.raw: |
+    set -e
+    mkdir -p /etc/e750
+    printf '%s\n' '{{ bsbf_server_ipv4 }}' > /etc/e750/expected-egress
+    chmod 644 /etc/e750/expected-egress
+    cat /etc/e750/expected-egress
+  changed_when: true
+
 - name: Install the tproxy bypass helper
   ansible.builtin.raw: |
     set -e
