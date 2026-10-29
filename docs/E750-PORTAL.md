@@ -43,19 +43,27 @@ simulates a portal client:
 - `ndsctl auth <ip>`: success;
 - post-auth ping: works; HTTP `http://1.1.1.1/` → **301** from Cloudflare.
 
-### Root cause of the post-auth block
+### Post-auth forwarding: from bypass to bonded
 
-BSBF's nft **tproxy intercepted TCP from `br-portal`** and broke post-auth
-traffic. The BSBF role now installs:
+The first fix was a BSBF tproxy bypass for `br-portal`
+(`iifname "br-portal" return`), which made portal clients use plain NAT.
+
+Since 2026-10-29 the portal runs **over the bond** instead. A separate table at
+prerouting priority `-140` (after nodogsplash's `mangle` marks) intercepts only
+authenticated clients (`0x30000`) and tproxies them into BSBF:
 
 ```text
-nft insert rule ip bsbf_bonding prerouting_mangle iifname "br-portal" return
+iifname "br-portal" ip daddr != 10.0.0.0/24   meta mark & 0x00030000 == 0x00030000   fib daddr type != local meta l4proto { tcp, udp } th dport != 53   tproxy to :12345 meta mark set 0x00030001
 ```
 
-and persists it from the `bsbf-bonding-nft` boot hook
-(`/etc/bsbf/tproxy-bypass.sh` + `/etc/bsbf/tproxy-bypass-interfaces`). Portal
-clients use the normal WAN/NAT path; the management LAN keeps BSBF. fw4 still
-rejects `portal -> lan`, so authenticated guests cannot reach `192.168.8.1`.
+Pre-auth traffic keeps its `0x10000`/`0x20000` mark and is never tproxied, so
+the splash still gates access. DNS and local destinations stay out of the
+tunnel. Details and evidence: [`BONDING-SERVERS-PARALLEL.md`](BONDING-SERVERS-PARALLEL.md)
+and `evidence/portal/2026-10-29_portal-over-bond.txt`.
+
+The bypass in the main table is kept: it guarantees pre-auth and non-TCP/UDP
+traffic never enters the tunnel. fw4 still rejects `portal -> lan`, so
+authenticated guests cannot reach `192.168.8.1`.
 
 ### Cold boot
 
@@ -96,8 +104,9 @@ LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-portal-r
   removes the previous airtime conflict. The 5 GHz radio runs with
   `skip_otp=1` and no per-device calibration; see
   [`E750-RADIO5G.md`](E750-RADIO5G.md).
-- Portal clients bypass BSBF and use the normal WAN/NAT path; BSBF serves the
-  management LAN. This is the working combined mode.
+- Authenticated portal clients are tproxied into BSBF at priority `-140`; the
+  main table still returns `br-portal` so pre-auth traffic never enters the
+  tunnel. The management LAN uses the same bonded path.
 - The role is not in the image yet; the packages (`tollgate-wrt`,
   `nodogsplash`) are installed at runtime.
 - The open AP is only safe while `nodogsplash` is enforcing; do not leave the

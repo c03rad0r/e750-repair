@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+"""Contract checks for TollGate over the BSBF bond."""
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def read(path: str) -> str:
+    return (ROOT / path).read_text()
+
+
+def test_helper_is_present_and_executable() -> None:
+    script = ROOT / "roles/bsbf/files/portal-tproxy.sh"
+    assert script.is_file()
+    assert script.stat().st_mode & 0o111
+    text = script.read_text()
+    assert "priority $PRIORITY" in text or "priority -140" in text
+    assert "0x00030000" in text
+    assert "tproxy to :12345" in text
+    assert "fwmark 0x1/0x1" in text
+    assert "th dport != 53" in text
+
+
+def test_role_enables_and_persists_it() -> None:
+    defaults = read("roles/bsbf/defaults/main.yml")
+    assert "bsbf_portal_tproxy: true" in defaults
+    assert 'bsbf_portal_interface: "br-portal"' in defaults
+    assert 'bsbf_portal_network: "10.0.0.0/24"' in defaults
+    tasks = read("roles/bsbf/tasks/main.yml")
+    assert "portal-tproxy.sh" in tasks
+    assert "route_localnet" in tasks
+    boot = read("roles/bsbf/files/bsbf-bonding-nft")
+    assert "portal-tproxy.sh" in boot
+
+
+def test_sta_is_the_preferred_default_route() -> None:
+    defaults = read("roles/bsbf/defaults/main.yml")
+    assert "bsbf_cellular_metric: 20" in defaults
+    verify = read("roles/verify_bsbf/tasks/main.yml")
+    assert '"$sta" -lt "$cell"' in verify
+    assert "STA beats the cellular default route" in verify
+
+
+def test_docs_and_evidence_record_the_result() -> None:
+    doc = read("docs/BONDING-SERVERS-PARALLEL.md")
+    for needle in (
+        "priority **-140**",
+        "0x30000",
+        "tproxy to :12345",
+        "route_localnet",
+        "evidence/portal/2026-10-29_portal-over-bond.txt",
+    ):
+        assert needle in doc, needle
+    evidence = read("evidence/portal/2026-10-29_portal-over-bond.txt")
+    assert "post-auth trace: ip=167.235.218.44" in evidence
+    assert "pre-auth trace: blocked" in evidence
