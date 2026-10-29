@@ -13,7 +13,7 @@ br-portal  10.0.0.1/24      phy2-ap0 (TollGate-E750, 5 GHz ch36/VHT80)
 phy1-sta0  hermes-lan       2.4 GHz STA/BSBF primary
 2.4 GHz AP disabled         airtime reserved for the backhaul
 wwan0      Aldi Talk 4G     BSBF backup
-BSBF       enabled, tproxy bypass for br-portal, egress 23.182.128.219
+BSBF       enabled; EU server in a container on the OMR host, egress 167.235.218.44
 TollGate   v0.6.0 daemon + nodogsplash + portal uhttpd :2051
 health     RESULT OK
 soak       24 h combined soak from 2026-10-29T17:17:45Z (first sample rc=0)
@@ -40,6 +40,8 @@ portal services. 103 contract tests pass.
 | Separate portal bridge | merged; `br-portal` + AP, management untouched |
 | Combined BSBF + TollGate | merged; tproxy bypass, post-auth 301, cold boot |
 | Portal role reproducibility | merged; nodogsplash/uhttpd/services in the role |
+| Parallel bonding servers | merged; BSBF in an nspawn container next to OMR on the Hetzner host |
+| Portal over the bond | merged; authenticated guests tproxied into BSBF (see `BONDING-SERVERS-PARALLEL.md`) |
 
 ## Remaining work
 
