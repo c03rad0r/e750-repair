@@ -51,6 +51,7 @@ additive role and playbook.
 | TollGate | [`docs/E750-TOLLGATE.md`](docs/E750-TOLLGATE.md) | v0.6.0 evaluated; AP+STA works, standalone install unstable |
 | BSBF + TollGate | [`docs/BSBF-TOLLGATE-COEXISTENCE.md`](docs/BSBF-TOLLGATE-COEXISTENCE.md) | combined mode working: `br-portal` + BSBF tproxy bypass |
 | Tracker | [`docs/E750-REMEDIATION.md`](docs/E750-REMEDIATION.md) | phases, checklist, execution log |
+| Roadmap | [`docs/ROADMAP.md`](docs/ROADMAP.md) | remaining P0–P2 work and inputs needed |
 
 ---
 
