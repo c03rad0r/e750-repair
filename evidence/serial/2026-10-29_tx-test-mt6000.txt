@@ -1,0 +1,8 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+wake_output='\nroot@tollgate-9BD4:~# \nroot@tollgate-9BD4:~# \nroot@tollgate-9BD4:~# \nroot@tollgate-9BD4:~# \nroot@tollgate-9BD4:~# \nroot@tollgate-9BD4:~# \nroot@tollgate-9BD4:~# \nroot@tollgate-9BD4:~# \nroot@tollgate-9BD4:~# \nroot@tollgate-9BD4:~# '
+[0] OK 'echo SERIAL_1501975_0\nSERIAL_1501975_0\nroot@tollgate-9BD4:~# '
+[1] OK 'echo SERIAL_1501975_1\nSERIAL_1501975_1\nroot@tollgate-9BD4:~# '
+[2] OK 'echo SERIAL_1501975_2\nSERIAL_1501975_2\nroot@tollgate-9BD4:~# '
+[3] OK 'echo SERIAL_1501975_3\nSERIAL_1501975_3\nroot@tollgate-9BD4:~# '
+[4] OK 'echo SERIAL_1501975_4\nSERIAL_1501975_4\nroot@tollgate-9BD4:~# '
+summary clean=5/5 corrupt=0

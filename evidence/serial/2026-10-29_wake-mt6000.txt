@@ -1,0 +1,28 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== wake ===
+
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+root@tollgate-9BD4:~# 
+=== command ===
+attempt=1 clean echo
+
+uid=0(root) gid=0(root) groups=0(root)
+root@tollgate-9BD4:~# 
