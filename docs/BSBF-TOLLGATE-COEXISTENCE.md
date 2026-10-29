@@ -99,18 +99,24 @@ Goal: a working captive portal with no BSBF running, on the same unit.
       `wifi down`/`wifi up`. Evidence `evidence/ap/2026-10-29_ap-sta.txt`.
       PR #17.
 
-### 2b. TollGate install (no BSBF)
+### 2b. TollGate install (no BSBF) — ATTEMPTED, FAILED, ROLLED BACK
 
-- [ ] Verify the v0.6.0 `mips_24kc-ath79-nand` bundle SHA256
-      (`bc5338ab…`) and install the offline bundle on the test unit.
-- [ ] Confirm `nodogsplash`, the portal on :2050, TollGate on :2121, and the
-      admin/portal uhttpd pages start.
-- [ ] Test the captive-portal flow: pre-auth redirect, payment/mint flow (test
-      mode), post-auth internet, DNS, and logout.
-- [ ] Check `top`, `free`, conntrack count, and 2.4 GHz airtime/throughput.
-- [ ] Record CPU/RAM headroom with portal traffic; decide whether BSBF can be
-      added without starving the portal.
-- [ ] Rollback: stop/disable TollGate, restore the previous network config.
+- [x] Verified the v0.6.0 `mips_24kc-ath79-nand` bundle SHA256
+      (`bc5338ab…`) and installed the offline bundle on the E750.
+- [x] `nodogsplash`, the portal, the backend and the admin board started on
+      80/2050/2051/2121/8080/8090/8443; eth0 moved to `br-private` 192.168.9.1.
+- [x] Result: TollGate's upstream manager removed the STA/AP vifs; `br-lan` was
+      left DOWN, hostapd could not recreate the AP, mint probes timed out, and
+      the serial showed process kills under memory pressure.
+- [x] Rollback: stopped/disabled the services, restored the pre-change config,
+      reset uhttpd, removed the TollGate nft includes, rebooted, re-applied
+      BSBF. **BSBF is healthy again.**
+- [ ] Next: **4G WAN + AP-only** (no STA) to avoid the single-radio AP+STA
+      race; then Ethernet WAN + AP-only; then a two-radio/5 GHz-repaired unit.
+- [ ] Do not retry the same combined-radio install; do not start Phase 3 until a
+      standalone topology is stable.
+
+Evidence: `evidence/tollgate/2026-10-29_standalone-attempt.txt`.
 
 ### 2c. Alternative topologies (if AP+STA is too slow)
 
