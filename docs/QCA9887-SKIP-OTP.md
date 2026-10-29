@@ -1,9 +1,10 @@
 # QCA9887 5 GHz — `skip_otp` lead
 
-Status: **partial success; disabled pending a controlled retry.** The 5 GHz
-QCA9887 initialized and beaconed an AP when ath10k loaded with
-`skip_otp=1`, but the initialization is not stable across a full wifi
-restart and it runs without per-device calibration.
+Status: **working as the portal AP** (2026-10-29), with no per-device
+calibration. The 5 GHz QCA9887 initializes at boot via the
+`/etc/init.d/ath10k-skip-otp` hook and serves `TollGate-E750` on
+channel 36/VHT80; the 2.4 GHz radio is the STA/BSBF backhaul. See
+[`E750-RADIO5G.md`](E750-RADIO5G.md).
 
 See `evidence/caldata/2026-10-29_skip-otp.md` for the full log.
 
@@ -45,5 +46,17 @@ insmod /lib/modules/$(uname -r)/ath10k_pci.ko
 
 ## Current state
 
-`wireless.radio1.disabled=1`; the 5 GHz radio is not used at boot. The 2.4 GHz
-STA/AP, BSBF and portal are healthy.
+`wireless.radio1.disabled=0`; the boot hook loads `skip_otp=1`; the 5 GHz AP is
+`phy2-ap0` on `br-portal`; the 2.4 GHz STA/BSBF and portal are healthy.
+
+
+## Experiment history
+
+- `skip_otp=1` first let the radio reach `AP-ENABLED` on channel 36/VHT80.
+- A full `wifi down/up` or module reload was **not stable**:
+  `failed to receive initialized event from target`, then the EEPROM `-22`
+  errors returned, `radio1` stayed pending, and the 2.4 GHz STA/portal could
+  drop.
+- `wireless.radio1.disabled=1` was used during rollback; it is now enabled via
+  the boot hook `ath10k-skip-otp` (START=19), which loads `skip_otp=1` before
+  wifi starts.

@@ -1,0 +1,41 @@
+# 5 GHz portal + BSBF — post-role cold boot 2026-10-29
+
+## radios/health
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0             UP             192.168.8.1/24 fd33:1825:ff29::1/60 fe80::9683:c4ff:fe4d:fc38/64 
+wwan0            UNKNOWN        10.192.147.55/28 fe80::48e5:74ff:fe11:a10d/64 
+br-portal        UP             10.0.0.1/24 fe80::9683:c4ff:fe4d:fc3a/64 
+phy2-ap0         UP             
+phy1-sta0        UP             192.168.50.123/24 fe80::9683:c4ff:fe4d:fc39/64 
+	Interface phy2-ap0
+		ssid TollGate-E750
+		type AP
+		channel 36 (5180 MHz), width: 80 MHz, center1: 5210 MHz
+	Interface phy1-sta0
+		ssid hermes-lan
+		type managed
+		channel 11 (2462 MHz), width: 20 MHz, center1: 2462 MHz
+== WAN firewall zone ==
+firewall.@zone[0].name='lan'
+firewall.@zone[0].network='lan'
+firewall.@zone[1].name='wan'
+firewall.@zone[1].network='wwan' 'wwan1'
+RESULT FAIL
+
+## client scan (5 GHz)
+	SSID: TollGate-E750
+	Supported rates: 6.0* 9.0 12.0* 18.0 24.0* 36.0 48.0 54.0 
+	Country: DE	Environment: Indoor/Outdoor
+		Channels [36 - 48] @ 23 dBm
+
+## veth portal flow
+splash=200
+portal=200
+--- 1.1.1.1 ping statistics ---
+1 packets transmitted, 0 packets received, 100% packet loss
+Client 10.0.0.120 authenticated.
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 43.771/50.015/56.260 ms
+http=301
+HTTP/1.1 301 Moved Permanently
+Server: cloudflare

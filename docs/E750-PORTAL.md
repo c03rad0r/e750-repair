@@ -3,9 +3,10 @@
 This role creates a captive-portal bridge **separate from the management LAN**:
 
 ```text
-eth0      192.168.8.1/24   management (unchanged)
-br-portal 10.0.0.1/24      phy1-ap0 only
-phy1-sta0 hermes-lan       STA/BSBF uplink (unchanged)
+eth0       192.168.8.1/24   management (unchanged)
+br-portal  10.0.0.1/24      5 GHz phy2-ap0 only (TollGate-E750, ch36/VHT80)
+phy1-sta0  hermes-lan       2.4 GHz STA/BSBF uplink (unchanged)
+2.4 GHz AP disabled         airtime reserved for the backhaul
 ```
 
 It does **not** touch `network.lan`, `eth0`, or `wireless.sta`. A 900 s watchdog
@@ -91,7 +92,10 @@ LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-portal-r
 
 ## Caveats
 
-- The portal and management share the 2.4 GHz radio; airtime is shared.
+- The portal uses the 5 GHz radio; the 2.4 GHz radio is the STA/backhaul. This
+  removes the previous airtime conflict. The 5 GHz radio runs with
+  `skip_otp=1` and no per-device calibration; see
+  [`E750-RADIO5G.md`](E750-RADIO5G.md).
 - Portal clients bypass BSBF and use the normal WAN/NAT path; BSBF serves the
   management LAN. This is the working combined mode.
 - The role is not in the image yet; the packages (`tollgate-wrt`,

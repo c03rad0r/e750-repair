@@ -1,0 +1,33 @@
+---
+- name: GL-E750 — verify the 5 GHz portal AP
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+  tasks:
+    - name: Read the radios
+      ansible.builtin.raw: |
+        iw dev | grep -E 'Interface|ssid|channel|type'
+      register: _r5
+      changed_when: false
+    - name: Read skip_otp
+      ansible.builtin.raw: cat /sys/module/ath10k_core/parameters/skip_otp
+      register: _skip
+      changed_when: false
+    - name: Read BSBF endpoints
+      ansible.builtin.raw: ip mp e
+      register: _ep
+      changed_when: false
+    - name: Show the 5 GHz state
+      ansible.builtin.debug:
+        msg:
+          - "{{ _r5.stdout_lines }}"
+          - "skip_otp={{ _skip.stdout | trim }}"
+          - "{{ _ep.stdout_lines }}"
+    - name: Assert the 5 GHz AP and the 2.4 GHz STA are present
+      ansible.builtin.assert:
+        that:
+          - "'TollGate-E750' in _r5.stdout"
+          - "'hermes-lan' in _r5.stdout"
+          - "_skip.stdout | trim == 'Y'"
+        fail_msg: "5 GHz AP or 2.4 GHz STA missing; see the radios above"
