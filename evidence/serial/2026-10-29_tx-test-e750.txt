@@ -1,0 +1,9 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+wake_output=''
+[0] FAIL '����������'
+[1] FAIL '������������'
+[2] FAIL '�������������'
+[3] FAIL '���\n����������'
+[4] FAIL '����w����������߾\n-ash: Ǐ��������������������������������������������������������������������������w����������߾: not found\nroot@e750-lab:~# '
+summary clean=0/5 corrupt=5
+first_failure='����������'

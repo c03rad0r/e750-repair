@@ -1,0 +1,43 @@
+# Serial adapter comparison — 2026-10-29
+
+## Adapters (x280)
+
+- E750: FTDI FT232R USB UART, serial `BH00DL3M` -> `/dev/ttyE750` (`ttyUSB0`)
+- MT6000: FTDI FT232R USB UART, serial `BG046H5F` -> `/dev/ttyUSB1` (`ttyUSB1`)
+- Both are on the same USB hub (`usb1/1-2`, ports 1 and 4), same host.
+
+## E750 — bad leg
+
+- `/etc/inittab`: `::askconsole:/usr/libexec/login.sh`
+- Running: `/sbin/askfirst /usr/libexec/login.sh`
+- CR burst: the prompt `root@e750-lab:~#` appears, but every typed command is
+  corrupted. The console is alive; the host -> E750 TX is not.
+- `serial-tx-test.py /dev/ttyE750 --count 5`: `clean=0/5 corrupt=5`
+- `serial-wake.py /dev/ttyE750 id`: 6 attempts, every echo corrupted:
+  `��`, `��`, `�`, `��`, `�`, `d`; "command not accepted after retries"
+
+## MT6000 — control leg
+
+- `serial-tx-test.py /dev/ttyUSB1 --count 5`: `clean=5/5 corrupt=0`
+- `serial-wake.py /dev/ttyUSB1 id`: `uid=0(root) gid=0(root)`
+- The hub and host USB controller are therefore not the cause.
+
+## Settings tested on the E750 leg
+
+- `latency_timer` 16 -> 1: no change.
+- USB `power/control` already `on`: no change.
+- 115200 8N1 raw, no flow control: the only baud that answers.
+
+## Conclusion
+
+The E750-specific FTDI adapter/cable (`BH00DL3M`) or its E750-end wiring is the
+bad leg. Replace/swap it with the known-good `BG046H5F` adapter first; if that
+works, replace the bad adapter/cable. Use a genuine 3.3 V FTDI or CP2102/CH340,
+short cable, common GND, TX->RX/RX<-TX, no VCC, direct USB port when testing.
+After the swap, `serial-tx-test.py` should be 5/5 and `serial-wake.py id`
+should return uid=0. The E750 console itself is fine (prompt/logs are clean);
+the host TX is the fault.
+
+The E750 is still fully reachable over SSH (x280, and T14 via `-J x280`); serial
+is recovery-only and is currently **not usable for commands** until the adapter
+is swapped/replaced.

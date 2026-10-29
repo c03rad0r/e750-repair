@@ -1,0 +1,20 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== wake ===
+
+root@e750-lab:~# �
+-ash: �: not found
+root@e750-lab:~# 
+root@e750-lab:~# �
+-ash: �: not found
+root@e750-lab:~# �
+-ash: �: not found
+root@e750-lab:~# 
+root@e750-lab:~# �������
+=== command ===
+attempt=1 corrupted echo: '��'
+attempt=2 corrupted echo: '��'
+attempt=3 corrupted echo: '�'
+attempt=4 corrupted echo: '��'
+attempt=5 corrupted echo: '�'
+attempt=6 corrupted echo: 'd'
+command not accepted after retries; the TX line is not reliable

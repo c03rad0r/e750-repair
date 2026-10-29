@@ -79,17 +79,22 @@ them there.
 
 ## Serial recovery
 
-If SSH is unavailable, use the serial console from x280:
+If SSH is unavailable, the serial console from x280 is the recovery path, but
+**the current E750 adapter is not reliable**: the FTDI `BH00DL3M` leg corrupts
+every command (the MT6000 `BG046H5F` leg on the same hub is clean). The console
+prompt appears, but commands are corrupted; see
+[`SERIAL-RELIABILITY.md`](SERIAL-RELIABILITY.md).
+
+Use SSH as the primary access until the adapter/cable is swapped or replaced.
+After the swap, verify with:
 
 ```bash
-# x280 owns /dev/ttyE750 (FTDI BH00DL3M), 115200
-python3 scripts/serial_wake.py /dev/ttyE750
+python3 scripts/serial-tx-test.py /dev/ttyE750 --count 5   # expect 5/5
+python3 scripts/serial-wake.py /dev/ttyE750 id              # expect uid=0
 ```
 
-The serial TX is marginal on the current FTDI clone; replace it with a genuine
-FTDI or CP2102 before relying on serial for the radio experiments. The repo's
-`inventory/hosts.yml` is the serial transport; `inventory/e750-ssh.yml` is the
-normal SSH path.
+The repo's `inventory/hosts.yml` is the serial transport;
+`inventory/e750-ssh.yml` is the normal SSH path.
 
 ## Security notes
 

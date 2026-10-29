@@ -120,8 +120,16 @@ handler that would recreate both.
       on `SHA256:wsNm…`; stale T14 known_hosts entry removed, backup kept.
 - [x] Add `docs/E750-ACCESS.md`; evidence in
       `evidence/access/2026-10-29_dropbear-keys.txt`.
-- [ ] Replace the FTDI clone with a genuine FTDI or CP2102; verify zero TX
-      corruption with `serial_wake.py` / repeated `echo`. (physical)
+- [x] Isolate the serial fault: E750 FTDI `BH00DL3M` is 0/5 clean and corrupts
+      every command; MT6000 FTDI `BG046H5F` on the same hub is 5/5 clean and
+      `id` works. `askfirst` needs a valid CR; the E750 prompt appears but
+      commands corrupt. `latency_timer` 16→1 and `power/control=on` do not fix it.
+- [x] Add `scripts/serial-tx-test.py`, `scripts/serial-wake.py`,
+      `docs/SERIAL-RELIABILITY.md`, and evidence. PR #6.
+- [ ] **Swap the E750 adapter/cable** to the known-good `BG046H5F` first, then
+      replace with a genuine 3.3 V FTDI or CP2102; re-run
+      `serial-tx-test.py` (expect 5/5) and `serial-wake.py id`. (physical,
+      P0 recovery blocker)
 - [ ] Keep the udev `/dev/ttyE750` name; make the serial port inventory-driven
       (`/dev/ttyE750` on x280, not hardcoded `/dev/ttyUSB3`).
 - [ ] Reconcile the 16 keys in `/root/.ssh/authorized_keys`; Dropbear does not
