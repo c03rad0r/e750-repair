@@ -26,14 +26,33 @@ fi
 cd "$IB_DIR"
 
 PACKAGES=$(grep -vE '^[[:space:]]*(#|$)' "${ROOT}/image/packages.txt" | tr '\n' ' ')
+STAGE="${BUILD}/files"
+rm -rf "$STAGE"
+mkdir -p "$STAGE"
+cp -a "${ROOT}/image/files/." "$STAGE/"
+install -D -m 755 "${ROOT}/scripts/e750-health.sh" "$STAGE/usr/bin/e750-health"
+install -D -m 755 "${ROOT}/scripts/e750-health-cron.sh" "$STAGE/usr/bin/e750-health-cron.sh"
+chmod 600 "$STAGE/etc/crontabs/root"
+
 echo "profile=${PROFILE}"
 echo "packages=${PACKAGES}"
-echo "files=${ROOT}/image/files"
+echo "files=${STAGE}"
 
 make -j"$(nproc)" image \
 	PROFILE="$PROFILE" \
 	PACKAGES="$PACKAGES" \
-	FILES="${ROOT}/image/files"
+	FILES="$STAGE"
+
+# Fail the build if the operational files were not actually baked in.
+for f in usr/bin/e750-health usr/bin/e750-health-cron.sh \
+	etc/crontabs/root etc/uci-defaults/99-e750-defaults \
+	etc/dropbear/authorized_keys; do
+	if ! find build_dir -type f -path "*/root-ath79/$f" | grep -q .; then
+		echo "ERROR: $f missing from the built rootfs" >&2
+		exit 1
+	fi
+done
+echo "verified: health monitor, cron entry, uci-defaults and operator keys are baked in"
 
 echo "=== built images ==="
 find "bin/targets/${TARGET}" -maxdepth 1 -type f \( -name '*.bin' -o -name '*.manifest' \) -printf '%p %s bytes\n' | sort

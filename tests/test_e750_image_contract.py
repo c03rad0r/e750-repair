@@ -17,6 +17,7 @@ def test_files_exist() -> None:
         "image/build.sh",
         "image/files/etc/uci-defaults/99-e750-defaults",
         "image/files/etc/dropbear/authorized_keys",
+        "image/files/etc/crontabs/root",
         "docs/E750-IMAGE.md",
     ):
         assert (ROOT / path).is_file(), path
@@ -33,6 +34,31 @@ def test_build_is_pinned_and_does_not_flash() -> None:
     assert "sysupgrade -n" not in build
     assert "mtd write" not in build
     assert (ROOT / "image/build.sh").stat().st_mode & 0o111
+
+
+def test_build_stages_and_verifies_the_operational_files() -> None:
+    build = read("image/build.sh")
+    assert 'install -D -m 755 "${ROOT}/scripts/e750-health.sh"' in build
+    assert 'install -D -m 755 "${ROOT}/scripts/e750-health-cron.sh"' in build
+    assert "STAGE=" in build and 'FILES="$STAGE"' in build
+    assert "missing from the built rootfs" in build
+    for needle in (
+        "usr/bin/e750-health",
+        "usr/bin/e750-health-cron.sh",
+        "etc/crontabs/root",
+        "etc/uci-defaults/99-e750-defaults",
+        "etc/dropbear/authorized_keys",
+    ):
+        assert needle in build, needle
+
+
+def test_image_schedules_the_health_monitor() -> None:
+    crontab = ROOT / "image/files/etc/crontabs/root"
+    assert crontab.stat().st_mode & 0o600
+    assert crontab.read_text().strip() == "*/5 * * * * /usr/bin/e750-health-cron.sh"
+    uci = read("image/files/etc/uci-defaults/99-e750-defaults")
+    assert "/etc/init.d/cron enable" in uci
+    assert "/etc/init.d/cron restart" in uci
 
 
 def test_packages_cover_the_bsbf_stack() -> None:

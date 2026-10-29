@@ -217,10 +217,15 @@ handler that would recreate both.
 - [x] Build succeeded: 16,609,552 bytes, sha256 `5a6fee11…`, 188 packages;
       versions match the live device. Evidence
       `evidence/image/2026-10-29_build.txt`; docs `docs/E750-IMAGE.md`.
+- [x] Rebuilt with the health monitor baked in: `/usr/bin/e750-health`,
+      `/usr/bin/e750-health-cron.sh`, `/etc/crontabs/root` (0600), cron enabled
+      at first boot. Final artifact 16,619,792 bytes, sha256 `9ea82c93…`;
+      `build.sh` now fails if any operational file is missing from the rootfs.
+      Evidence `evidence/image/2026-10-29_build-with-monitor.txt`. PR #15.
 - [ ] Flash with a full backup and test cold boot/failover/egress — **blocked
       on a reliable serial adapter**; do not flash before the swap/reflow.
 - [ ] Restore the `br-lan` bridge if the AP is ever enabled.
-- [ ] Fold `gl-e750-mcu` into the image after Phase 6.
+- [ ] Fold `gl-e750-mcu` into the image after Phase 6 (not yet: probe silent).
 - [x] PR #9 + merge.
 
 ## Phase 8 — TollGate evaluation (P2, optional) — NO-GO

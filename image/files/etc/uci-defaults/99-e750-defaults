@@ -61,4 +61,8 @@ uci commit system
 # The EM060K is already in MBIM mode; avoid the AT probe service.
 /etc/init.d/bsbf-quectel-usbnet disable 2>/dev/null || true
 
+# Enable the 5-minute health monitor baked into the image.
+/etc/init.d/cron enable 2>/dev/null || true
+/etc/init.d/cron restart 2>/dev/null || true
+
 exit 0
