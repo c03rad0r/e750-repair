@@ -1,0 +1,39 @@
+# TollGate 4G WAN + AP-only attempt — 2026-10-29
+
+## applied
+- stopped BSBF (bsbf-bonding --disable, xray/nft/mptcp stop)
+- br-lan: eth0 + phy1-ap0, 192.168.8.1/24
+- AP-only: wireless.sta.disabled=1; default_radio0 enabled, MAC 02:83:c4:4d:fc:3b, ch11
+- 4G as network.wwan (MBIM, /dev/cdc-wdm0, APN internet.eplus.de); network.wwan1 deleted
+- firewall WAN zone set to wwan
+- 600 s watchdog armed before the reload
+
+## result
+- after network reload, eth0/br-lan 192.168.8.1 was unreachable from x280
+- the AP SSID TollGate-E750 was still visible in a scan, but the portal/LAN had no reachable IP
+- TollGate was NOT started; this was a network-reconfiguration failure, not a TollGate run
+- after 600 s the watchdog restored /etc/config/{network,wireless,firewall,uhttpd,nodogsplash} and reloaded
+- access returned on eth0 192.168.8.1; BSBF was re-applied and verified
+
+## final state
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0             UP             192.168.8.1/24 fd33:1825:ff29::1/60 fe80::9683:c4ff:fe4d:fc38/64 
+wwan0            UNKNOWN        10.174.212.70/30 fe80::2861:cdff:fe26:c7ec/64 
+phy1-sta0        UP             192.168.50.123/24 fe80::9683:c4ff:fe4d:fc39/64 
+enabled
+id 1 subflow dev phy1-sta0 
+id 2 subflow backup dev wwan0 
+wwan0_rx_bytes=23067
+wwan0_tx_bytes=15004
+== WAN firewall zone ==
+firewall.@zone[0].name='lan'
+firewall.@zone[0].network='lan'
+firewall.@zone[1].name='wan'
+firewall.@zone[1].network='wwan' 'wwan1'
+RESULT OK
+no-tollgate-procs
+
+## note
+Do not retry this sequence without a reliable serial console or a separate management interface.
