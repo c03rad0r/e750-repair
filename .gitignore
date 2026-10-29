@@ -8,3 +8,8 @@ out/
 
 # BSBF client credentials (port/UUID) are generated per deployment.
 state/bsbf/*.json
+
+# ImageBuilder workdir and downloaded/built images
+image/build/
+image/*.tar.zst
+image/bin/

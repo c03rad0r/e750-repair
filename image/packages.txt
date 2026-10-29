@@ -1,0 +1,31 @@
+# Management
+luci
+
+# BSBF client
+bsbf-bonding
+bsbf-quectel-usbnet
+bsbf-autoconf-cellular
+bsbf-autoconf-dhcp
+xray-core
+
+# MPTCP / tproxy
+ip-full
+mptcpize
+kmod-ifb
+kmod-nf-tproxy
+kmod-nft-tproxy
+
+# MBIM / 4G
+kmod-usb-net-cdc-mbim
+kmod-usb-net-qmi-wwan
+kmod-usb-serial-option
+umbim
+uqmi
+
+# Diagnostics
+coreutils-stty
+picocom
+curl
+
+# WiFi STA
+wpad-basic-mbedtls

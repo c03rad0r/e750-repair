@@ -96,30 +96,34 @@ def make(responses, retries=3):
     return c
 
 
-print("test: clean echo accepted immediately")
-# responses: one per _send (the ctrl-c write is separate, so read() returns per send)
-c = make([b"echo HI\r\nHI\r\nroot@OpenWrt:~# "])
-rc, out, err = c.exec_command("echo HI")
-check("rc == 0", rc == 0, rc)
-check("output captured", "HI" in out, out[:80])
+def main():
+    print("test: clean echo accepted immediately")
+    # responses: one per _send (the ctrl-c write is separate, so read() returns per send)
+    c = make([b"echo HI\r\nHI\r\nroot@OpenWrt:~# "])
+    rc, out, err = c.exec_command("echo HI")
+    check("rc == 0", rc == 0, rc)
+    check("output captured", "HI" in out, out[:80])
 
-print("test: corrupted echo is retried")
-c = make([
-    b"?cho HI\r\n> ",                       # corrupted: no prompt, no clean echo
-    b"echo HI\r\nHI\r\nroot@OpenWrt:~# ",   # clean on retry
-])
-rc, out, err = c.exec_command("echo HI")
-check("rc == 0 after retry", rc == 0, rc)
-check("retry produced clean output", "root@OpenWrt" in out, out[:80])
+    print("test: corrupted echo is retried")
+    c = make([
+        b"?cho HI\r\n> ",                       # corrupted: no prompt, no clean echo
+        b"echo HI\r\nHI\r\nroot@OpenWrt:~# ",   # clean on retry
+    ])
+    rc, out, err = c.exec_command("echo HI")
+    check("rc == 0 after retry", rc == 0, rc)
+    check("retry produced clean output", "root@OpenWrt" in out, out[:80])
 
-print("test: persistent corruption raises rather than lying")
-c = make([b"?ngarbage\r\n"] * 3, retries=3)
-try:
-    c.exec_command("echo HI")
-    check("raised on persistent corruption", False, "no exception")
-except AnsibleConnectionFailure:
-    check("raised on persistent corruption", True)
+    print("test: persistent corruption raises rather than lying")
+    c = make([b"?ngarbage\r\n"] * 3, retries=3)
+    try:
+        c.exec_command("echo HI")
+        check("raised on persistent corruption", False, "no exception")
+    except AnsibleConnectionFailure:
+        check("raised on persistent corruption", True)
 
-print()
-print("%d passed, %d failed" % (PASS, FAIL))
-sys.exit(1 if FAIL else 0)
+    print()
+    print("%d passed, %d failed" % (PASS, FAIL))
+    sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    main()

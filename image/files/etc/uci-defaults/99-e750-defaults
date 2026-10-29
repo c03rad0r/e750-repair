@@ -1,0 +1,64 @@
+#!/bin/sh
+# Non-secret first-boot defaults for the E750 BSBF image.
+# The WiFi STA PSK and the BSBF UUID/port are NOT baked in; the operator adds
+# them via OpenBao/the client playbook after first boot.
+set -e
+
+# LAN: the single Ethernet port, 192.168.8.1/24.
+uci set network.lan.device='eth0'
+uci set network.lan.proto='static'
+uci set network.lan.ipaddr='192.168.8.1'
+uci set network.lan.netmask='255.255.255.0'
+
+# STA WAN placeholder (SSID/PSK configured later); 4G MBIM WAN.
+uci set network.wwan=interface
+uci set network.wwan.proto='dhcp'
+uci set network.wwan.metric='9'
+uci set network.wwan1=interface
+uci set network.wwan1.device='/dev/cdc-wdm0'
+uci set network.wwan1.proto='mbim'
+uci set network.wwan1.apn='internet.eplus.de'
+uci set network.wwan1.pdptype='ipv4'
+uci set network.wwan1.metric='13'
+uci set network.wwan1.disabled='0'
+uci delete network.wan1 2>/dev/null || true
+uci commit network
+
+# DHCP for the LAN.
+uci set dhcp.lan.start='100'
+uci set dhcp.lan.limit='150'
+uci set dhcp.lan.leasetime='12h'
+uci commit dhcp
+
+# WAN firewall zone: only interfaces that exist.
+zone=""
+for z in $(uci show firewall | sed -n "s/^firewall\.\(@zone\[[0-9]*\]\)\.name='wan'$/\1/p"); do
+	zone="$z"
+done
+if [ -n "$zone" ]; then
+	uci -q delete firewall.$zone.network
+	for n in wwan wwan1; do
+		uci add_list firewall.$zone.network="$n"
+	done
+	uci commit firewall
+fi
+
+# AP disabled; STA is configured by the operator.
+uci set wireless.default_radio0.disabled='1' 2>/dev/null || true
+uci commit wireless 2>/dev/null || true
+
+# Key-only Dropbear; the image carries the operator public keys.
+uci set dropbear.main.PasswordAuth='off'
+uci set dropbear.main.RootPasswordAuth='off'
+uci commit dropbear
+
+# Host identity.
+uci set system.@system[0].hostname='e750-lab'
+uci set system.@system[0].timezone='CET-1CEST,M3.5.0,M10.5.0/3'
+uci set system.@system[0].zonename='Europe/Berlin'
+uci commit system
+
+# The EM060K is already in MBIM mode; avoid the AT probe service.
+/etc/init.d/bsbf-quectel-usbnet disable 2>/dev/null || true
+
+exit 0

@@ -185,12 +185,24 @@ handler that would recreate both.
 
 ## Phase 7 — clean image (P2)
 
-- [ ] Add an ImageBuilder recipe for `ath79/nand` / `glinet_gl-e750`:
-      package list (BSBF, `ip-full`, `umbim`, `stty`, `microcom`, MCU),
-      `uci-defaults` for LAN/STA/APN, no Python.
-- [ ] Restore the `br-lan` bridge if the AP is enabled.
-- [ ] Build, flash with a full backup, test cold boot/failover/egress.
-- [ ] PR + merge.
+- [x] Add `image/` ImageBuilder recipe for `ath79/nand` / `glinet_gl-e750`:
+      package list (BSBF client, `ip-full`, `mptcpize`, tproxy/ifb, MBIM,
+      `umbim`, `uqmi`, `stty`, `picocom`, `curl`, `wpad-basic-mbedtls`, `luci`).
+- [x] Add `image/files/etc/uci-defaults/99-e750-defaults`: LAN `eth0`
+      `192.168.8.1/24`, DHCP, 4G MBIM APN `internet.eplus.de`, WAN zone
+      `wwan wwan1`, AP disabled, key-only Dropbear, hostname/timezone. No PSK
+      and no BSBF server/UUID.
+- [x] Bake the two public operator keys (x280 + T14); no private material.
+- [x] Pin the ImageBuilder tarball SHA256 in `image/build.sh`; the script only
+      builds, it never flashes.
+- [x] Build succeeded: 16,609,552 bytes, sha256 `5a6fee11…`, 188 packages;
+      versions match the live device. Evidence
+      `evidence/image/2026-10-29_build.txt`; docs `docs/E750-IMAGE.md`.
+- [ ] Flash with a full backup and test cold boot/failover/egress — **blocked
+      on a reliable serial adapter**; do not flash before the swap/reflow.
+- [ ] Restore the `br-lan` bridge if the AP is ever enabled.
+- [ ] Fold `gl-e750-mcu` into the image after Phase 6.
+- [x] PR #9 + merge.
 
 ## Phase 8 — TollGate evaluation (P2, optional)
 
