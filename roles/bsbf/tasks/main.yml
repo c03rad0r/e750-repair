@@ -137,19 +137,25 @@
     > /etc/bsbf/bsbf-mptcp-subflow-backup
   changed_when: true
 
-- name: Check the nft boot hook
-  ansible.builtin.raw: >-
-    grep -q 'modprobe nft_tproxy' /etc/init.d/bsbf-bonding-nft
-    && echo patched || echo unpatched
-  register: _bsbf_nftboot
-  changed_when: false
+- name: Install the patched nft boot hook (cold boot + tproxy bypass)
+  ansible.builtin.raw: |
+    set -e
+    cat > /etc/init.d/bsbf-bonding-nft <<'E750_NFT_EOF'
+    {{ lookup('file', 'bsbf-bonding-nft') }}
+    E750_NFT_EOF
+    chmod +x /etc/init.d/bsbf-bonding-nft
+    grep -n 'tproxy-bypass.sh' /etc/init.d/bsbf-bonding-nft
+  changed_when: true
 
-- name: Patch the nft boot hook for cold boot
-  ansible.builtin.raw: >-
-    printf '%s' '{{ lookup('file', 'bsbf-bonding-nft') | b64encode }}'
-    | base64 -d > /etc/init.d/bsbf-bonding-nft
-    && chmod +x /etc/init.d/bsbf-bonding-nft
-  when: "'patched' not in _bsbf_nftboot.stdout"
+- name: Install the tproxy bypass helper
+  ansible.builtin.raw: |
+    set -e
+    cat > /etc/bsbf/tproxy-bypass.sh <<'E750_BYPASS_EOF'
+    {{ lookup('file', 'tproxy-bypass.sh') }}
+    E750_BYPASS_EOF
+    chmod 755 /etc/bsbf/tproxy-bypass.sh
+    printf '%s\n' {{ bsbf_tproxy_bypass_interfaces | map('quote') | join(' ') }} > /etc/bsbf/tproxy-bypass-interfaces
+    cat /etc/bsbf/tproxy-bypass-interfaces
   changed_when: true
 
 - name: Prepare the nft table and enable BSBF
@@ -157,8 +163,15 @@
     modprobe nft_tproxy 2>/dev/null || true
     nft list table ip bsbf_bonding >/dev/null 2>&1 || nft add table ip bsbf_bonding
     bsbf-bonding --enable
+    /etc/bsbf/tproxy-bypass.sh
   register: _bsbf_enable
   changed_when: true
+
+- name: Show the tproxy bypass
+  ansible.builtin.raw: |
+    nft list chain ip bsbf_bonding prerouting_mangle | head -8
+  register: _bsbf_bypass
+  changed_when: false
 
 - name: Reset the endpoint cache and restart bsbf-mptcp
   ansible.builtin.raw: |
@@ -172,7 +185,7 @@
   ansible.builtin.raw: |
     for i in $(seq 1 30); do
       if ip mp e 2>/dev/null | grep -q 'dev {{ bsbf_sta_interface }}' \
-         && ip mp e 2>/dev/null | grep -q 'dev {{ bsbf_cellular_interface }}'; then
+         && ip mp e 2>/dev/null | grep -q 'backup dev {{ bsbf_cellular_interface }}'; then
         exit 0
       fi
       sleep 1

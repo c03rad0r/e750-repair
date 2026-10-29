@@ -10,4 +10,5 @@ boot() {
 	modprobe nft_tproxy 2>/dev/null
 	nft list table ip bsbf_bonding >/dev/null 2>&1 || nft add table ip bsbf_bonding
 	/usr/sbin/nft -f /usr/share/bsbf/bsbf_bonding.nft
+	[ -x /etc/bsbf/tproxy-bypass.sh ] && /etc/bsbf/tproxy-bypass.sh
 }

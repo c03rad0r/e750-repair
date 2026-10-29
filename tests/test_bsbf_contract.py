@@ -132,3 +132,24 @@ def test_playbooks_target_the_right_groups() -> None:
     assert "name: bsbf" in read("playbook-bsbf-client.yml")
     assert "name: verify_bsbf" in read("playbook-bsbf-client.yml")
     assert "role: bsbf_server" in read("playbook-bsbf-server.yml")
+
+
+def test_tproxy_bypass_for_the_portal_bridge() -> None:
+    defaults = read("roles/bsbf/defaults/main.yml")
+    assert "bsbf_tproxy_bypass_interfaces" in defaults
+    assert "- br-portal" in defaults
+    script = ROOT / "roles/bsbf/files/tproxy-bypass.sh"
+    assert script.is_file()
+    assert script.stat().st_mode & 0o111
+    text = script.read_text()
+    assert "nft insert rule ip bsbf_bonding prerouting_mangle" in text
+    assert "iifname" in text
+    tasks = read("roles/bsbf/tasks/main.yml")
+    assert "tproxy-bypass.sh" in tasks
+    assert "bsbf_tproxy_bypass_interfaces" in tasks
+    assert "E750_BYPASS_EOF" in tasks
+    assert "base64 -d" not in tasks
+    assert "E750_NFT_EOF" in tasks
+    assert "backup dev {{ bsbf_cellular_interface }}" in tasks
+    boot = read("roles/bsbf/files/bsbf-bonding-nft")
+    assert "tproxy-bypass.sh" in boot
