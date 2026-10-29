@@ -176,12 +176,22 @@ handler that would recreate both.
 - [ ] Optional bridge/AP migration when a 5 GHz radio makes AP+STA worthwhile.
 - [ ] Optional server `add_addr_accepted` tuning.
 
-## Phase 6 — screen/MCU (P2)
+## Phase 6 — screen/MCU (P2) — investigated, deferred
 
-- [ ] Build/install `gl-e750-mcu` for OpenWrt 25.12 / mips_24kc, or write a
-      small MCU daemon; show battery/signal/IP; keep the license clean.
-- [ ] Add `roles/e750_mcu` or an ImageBuilder package; tests/docs/evidence.
-- [ ] PR + merge.
+- [x] Confirm the MCU protocol: GL's `e750-mcu` uses `/dev/ttyS0` at 115200 and
+      one JSON object per line; `mcu_status`/`version` are documented queries;
+      the v2 UI uses `ubus call mcu` + UCI `mcu.global.*`.
+- [x] Probe this unit: `{"version":"1"}` and `{"mcu_status":"1"}` at 9600,
+      19200, 38400, 57600 and 115200 (console login stopped) returned **no
+      reply**; only one real UART exists; no MCU daemon/package/USB device.
+- [x] Add `scripts/mcu-probe.sh` (documented queries only, no UCI writes, no
+      daemon, restores `askfirst`) and `docs/E750-MCU.md`.
+- [x] Evidence `evidence/mcu/2026-10-29_probe.txt`. PR #11 merged.
+- [ ] Build GL's `gl-e750-mcu` for 25.12/mips_24kc with the SDK, or port the
+      procd shell approach — **only after** the probe returns a reply and a
+      reliable serial recovery exists. Do not ship an unverified writer
+      (malformed JSON can shut the MCU/router down and boot-loop).
+- [ ] Fold the verified package/daemon into `image/packages.txt` and rebuild.
 
 ## Phase 7 — clean image (P2)
 
