@@ -44,10 +44,17 @@ portal services. 86 contract tests pass.
 
 ### P0 — physical / recovery (needs input)
 
-- [ ] **Replace/reflow the E750 serial adapter** (`BH00DL3M`). The MT6000
-      `BG046H5F` leg on the same hub is clean, so the E750 leg is bad.
-      Verify `serial-tx-test.py` 5/5 and `serial-wake.py id`.
-- [ ] Run `serial-tx-test.py --loopback` (10/10) and the continuity/wiggle test.
+- [x] **Serial cable re-soldered** (2026-10-29): raw reliability improved from
+      0/5 to 57/58 commands; one bit flip remained.
+- [x] **Checksummed serial exec** (`scripts/serial-exec.py`): base64 upload,
+      device SHA-256, retransmit, decoded-script SHA-256, output SHA-256,
+      `--dry-run`, dangerous-command gate. A natural bit flip was caught and
+      retransmitted; the corrupted script was never executed. See
+      [`SERIAL-CHECKSUM.md`](SERIAL-CHECKSUM.md).
+- [ ] Run `serial-tx-test.py --count 100` and a wiggle test; then run the
+      checksummed channel for the 5 GHz experiments.
+- [ ] ZMODEM (`sz`/`rz`) smoke test for file transfer; use `loadx`/`loady` in
+      U-Boot, never typed write commands.
 - [ ] Take a fresh private backup before any flash/radio experiment.
 - [ ] **5 GHz QCA9887**: board-ID/EEPROM/OTP and BMI read path (`bmi_id N/A`);
       optional top-level `cal-pci` follow-up. Do not run risky firmware work

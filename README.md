@@ -43,6 +43,7 @@ additive role and playbook.
 | Client/server bonding | [`docs/BSBF-BONDING.md`](docs/BSBF-BONDING.md), [`docs/BSBF-SERVER.md`](docs/BSBF-SERVER.md) | MPTCP/xray client + server, failover |
 | 4G diagnostics | [`docs/E750-MODEM-DIAG.md`](docs/E750-MODEM-DIAG.md) | read-only AT/MBIM signal/APN report |
 | Serial reliability | [`docs/SERIAL-RELIABILITY.md`](docs/SERIAL-RELIABILITY.md) | TX test, loopback, cold-joint/continuity runbook |
+| Serial checksum exec | [`docs/SERIAL-CHECKSUM.md`](docs/SERIAL-CHECKSUM.md) | base64 + SHA-256 upload, retransmit, output hash, dry-run |
 | Access | [`docs/E750-ACCESS.md`](docs/E750-ACCESS.md) | Dropbear operator keys |
 | Network + health | [`docs/E750-NETWORK-HEALTH.md`](docs/E750-NETWORK-HEALTH.md) | WAN zone cleanup, critical check |
 | Monitoring | [`docs/E750-MONITOR.md`](docs/E750-MONITOR.md) | 5-minute cron health log + syslog |
