@@ -45,14 +45,18 @@ portal services. 86 contract tests pass.
 ### P0 — physical / recovery (needs input)
 
 - [x] **Serial cable re-soldered** (2026-10-29): raw reliability improved from
-      0/5 to 57/58 commands; one bit flip remained.
+      0/5 to **96/100** commands; ~4% errors remain.
 - [x] **Checksummed serial exec** (`scripts/serial-exec.py`): base64 upload,
       device SHA-256, retransmit, decoded-script SHA-256, output SHA-256,
       `--dry-run`, dangerous-command gate. A natural bit flip was caught and
       retransmitted; the corrupted script was never executed. See
       [`SERIAL-CHECKSUM.md`](SERIAL-CHECKSUM.md).
-- [ ] Run `serial-tx-test.py --count 100` and a wiggle test; then run the
-      checksummed channel for the 5 GHz experiments.
+- [x] 100-command test: 96/100 clean, 4 corrupt; the checksummed channel caught
+      a natural bit flip and retransmitted. Evidence
+      `evidence/serial/2026-10-29_100-command.txt`.
+- [ ] Wiggle test; if errors cluster, reflow/swap the adapter. Use the
+      checksummed channel for all Linux commands and `loadx`/`loady`/ZMODEM for
+      U-Boot/files; never rely on the raw link for typed bootloader commands.
 - [ ] ZMODEM (`sz`/`rz`) smoke test for file transfer; use `loadx`/`loady` in
       U-Boot, never typed write commands.
 - [ ] Take a fresh private backup before any flash/radio experiment.

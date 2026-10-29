@@ -45,23 +45,25 @@ gitignored.
 ## Build result (2026-10-29)
 
 Final artifact, built on T14 with the pinned ImageBuilder **including the health
-monitor**:
+monitor and the serial tools** (`coreutils-base64`, `lrzsz`):
 
 ```text
 openwrt-25.12.5-ath79-nand-glinet_gl-e750-squashfs-sysupgrade.bin
-size   16619792 bytes
-sha256 9ea82c93fcc286a154fd877e0ef42fc65af07064f445dab9ec028952a2247dad
-packages 188
+size   16650512 bytes
+sha256 05152fedf29d63b8e79d4ac2db03f9360274343075a463b7b6cc8464d962c7dd
+packages 190
 ```
 
 Verified in the built rootfs: `/usr/bin/e750-health` (2316 B),
 `/usr/bin/e750-health-cron.sh` (1017 B), `/etc/crontabs/root` (0600),
 `/etc/uci-defaults/99-e750-defaults` (executable), the two public Dropbear keys,
 and the `S50cron` rc.d symlink. Evidence:
-`evidence/image/2026-10-29_build-with-monitor.txt`.
+`evidence/image/2026-10-29_build-serial-tools.txt` (and the earlier
+`..._build-with-monitor.txt`).
 
-> The first build in PR #9 (sha256 `5a6fee11…`, 16609552 bytes) did **not**
-> include the monitor; it predates PR #10. The artifact above supersedes it.
+> The PR #9 build (`5a6fee11…`) predates the monitor; the PR #15 build
+> (`9ea82c93…`) predates the serial tools. The artifact above supersedes both.
+> It is **not flashed**; flashing requires the serial link/checksum channel.
 
 The package versions in the image match the live device (checked with
 `apk list --installed`): `bsbf-* 2026.08.29~60f0d20f-r1`, `xray-core 26.3.27-r1`,
