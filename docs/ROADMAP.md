@@ -60,9 +60,14 @@ portal services. 86 contract tests pass.
 - [ ] ZMODEM (`sz`/`rz`) smoke test for file transfer; use `loadx`/`loady` in
       U-Boot, never typed write commands.
 - [ ] Take a fresh private backup before any flash/radio experiment.
-- [ ] **5 GHz QCA9887**: board-ID/EEPROM/OTP and BMI read path (`bmi_id N/A`);
-      optional top-level `cal-pci` follow-up. Do not run risky firmware work
-      without serial recovery.
+- [x] **5 GHz QCA9887 `skip_otp` lead**: `skip_otp=1` (via `insmod`) let the
+      radio initialize and beacon a 5 GHz AP on ch36/VHT80; no per-device
+      calibration and unstable across a full wifi restart. Disabled again.
+      See [`QCA9887-SKIP-OTP.md`](QCA9887-SKIP-OTP.md) and
+      `evidence/caldata/2026-10-29_skip-otp.md`.
+- [ ] Controlled 5 GHz retry with serial: `insmod skip_otp=1`, `wifi reload`
+      only, AP on a separate bridge, low txpower, association/throughput;
+      try `cal-pci` + `skip_otp`; persist only if stable.
 - [ ] Decide whether the 5 GHz repair is still required now that the combined
       2.4 GHz portal + BSBF path works (it is the long-term headroom fix).
 
