@@ -157,16 +157,21 @@ handler that would recreate both.
 
 ## Phase 5 — network/role cleanup (P1/P2)
 
-- [ ] Restore `br-lan` (eth0 + AP) if the AP is ever enabled; the BSBF autoconf
-      changed LAN to `eth0` and the AP is disabled. Add a role variable/docs.
-- [ ] Clean the WAN firewall zone network list (`wan wan6 wwan wan1 wwan1`);
-      verify `wwan1`/`wwan` are in the zone and masq is on.
-- [ ] Make the `bsbf-mptcp` site patches part of the role (already idempotent);
-      add a package-upgrade check and a note to re-run the role.
-- [ ] Add a 4G data-usage / BSBF health monitor (status, endpoints, egress,
-      failover, data counter) with an alert.
-- [ ] Optional: set server `add_addr_accepted` and test additional subflows.
-- [ ] PR + merge.
+- [x] Clean the WAN firewall zone to the interfaces that exist: `wwan wwan1`
+      (stale `wan`/`wan6`/`wan1` removed). masq/forwarding preserved; BSBF
+      tproxy unaffected. Live 5 MB test: egress `23.182.128.219`, ~2.09 MB/s.
+- [x] Add `e750_ap_enabled: false` and an explicit refusal in
+      `roles/e750_network`; enabling the AP still needs a tested `br-lan`
+      bridge migration (eth0 + AP). Documented in `docs/E750-NETWORK-HEALTH.md`.
+- [x] Confirm the `bsbf-mptcp` site patches are re-applied by the role; document
+      that a package upgrade requires re-running the client playbook.
+- [x] Add `scripts/e750-health.sh`, `roles/e750_health`, and
+      `playbook-e750-network-health.yml`: BSBF status, endpoints, tproxy, both
+      WANs, server egress, 4G counters, 5 GHz warning. Live result `RESULT OK`.
+- [x] Evidence `evidence/network/2026-10-29_firewall-health.txt`; docs
+      `docs/E750-NETWORK-HEALTH.md`. PR #7 + merge.
+- [ ] Optional bridge/AP migration when a 5 GHz radio makes AP+STA worthwhile.
+- [ ] Optional server `add_addr_accepted` tuning.
 
 ## Phase 6 — screen/MCU (P2)
 

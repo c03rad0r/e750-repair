@@ -1,0 +1,44 @@
+---
+# Clean the WAN firewall zone to the interfaces that actually exist. The BSBF
+# tproxy path is independent, but NAT/forwarding for the WANs should not list
+# stale interfaces. The AP/bridge path is deliberately not changed.
+
+- name: Read the firewall zones
+  ansible.builtin.raw: uci show firewall
+  register: _e750_fw
+  changed_when: false
+
+- name: Clean the WAN zone network list
+  ansible.builtin.raw: |
+    set -e
+    zone=""
+    for z in $(uci show firewall | sed -n "s/^firewall\.\(@zone\[[0-9]*\]\)\.name='{{ e750_firewall_wan_zone }}'$/\1/p"); do
+      zone="$z"
+    done
+    if [ -z "$zone" ]; then
+      echo "zone {{ e750_firewall_wan_zone }} not found"
+      exit 1
+    fi
+    uci -q delete firewall.$zone.network
+    for n in {{ e750_firewall_wan_networks | join(' ') }}; do
+      uci add_list firewall.$zone.network="$n"
+    done
+    uci commit firewall
+    /etc/init.d/firewall reload
+    echo "zone=$zone networks=$(uci get firewall.$zone.network)"
+  register: _e750_fw_clean
+  changed_when: true
+
+- name: Show the cleaned WAN zone
+  ansible.builtin.debug:
+    msg: "{{ _e750_fw_clean.stdout_lines }}"
+
+- name: Refuse to enable the AP without the bridge migration
+  ansible.builtin.assert:
+    that:
+      - not (e750_ap_enabled | bool)
+    fail_msg: >-
+      e750_ap_enabled is not implemented. The current LAN is eth0 and the AP is
+      disabled; enabling it needs a br-lan bridge with eth0 + the AP interface,
+      plus a tested rollback. Keep it disabled until that path is added.
+  when: e750_ap_enabled | bool

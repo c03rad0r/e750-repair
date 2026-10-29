@@ -1,0 +1,69 @@
+# Network cleanup + health — 2026-10-29T09:52:32Z
+
+## ansible run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+PLAY [GL-E750 — network cleanup + health] **************************************
+
+TASK [Apply the network cleanup] ***********************************************
+
+TASK [e750_network : Read the firewall zones] **********************************
+ok: [e750]
+
+TASK [e750_network : Clean the WAN zone network list] **************************
+changed: [e750]
+
+TASK [e750_network : Show the cleaned WAN zone] ********************************
+ok: [e750] => {
+    "msg": [
+        "zone=@zone[1] networks=wwan wwan1"
+    ]
+}
+
+TASK [e750_network : Refuse to enable the AP without the bridge migration] *****
+skipping: [e750]
+
+TASK [Verify the live state] ***************************************************
+
+TASK [e750_health : Run the E750 health check] *********************************
+ok: [e750]
+
+TASK [e750_health : Show the health report] ************************************
+ok: [e750] => {
+    "msg": [
+        "== BSBF ==",
+        "OK   bsbf-bonding enabled",
+        "== MPTCP endpoints ==",
+        "id 3 subflow backup dev wwan0 ",
+        "id 4 subflow dev phy1-sta0 ",
+        "OK   STA endpoint",
+        "OK   4G backup endpoint",
+        "== nft tproxy ==",
+        "OK   bsbf tproxy table",
+        "== WANs ==",
+        "OK   4G wwan1 up",
+        "OK   STA wwan up",
+        "== egress ==",
+        "OK   egress 23.182.128.219",
+        "== 5 GHz ==",
+        "WARN 5 GHz radio absent (known QCA9887 repair issue)",
+        "== 4G data ==",
+        "wwan0_rx_bytes=3263547",
+        "wwan0_tx_bytes=708662",
+        "== WAN firewall zone ==",
+        "firewall.@zone[0].name='lan'",
+        "firewall.@zone[0].network='lan'",
+        "firewall.@zone[1].name='wan'",
+        "firewall.@zone[1].network='wwan' 'wwan1'",
+        "RESULT OK"
+    ]
+}
+
+PLAY RECAP *********************************************************************
+e750                       : ok=5    changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+
+
+## 5 MB through the E750 after the firewall cleanup
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+egress=23.182.128.219
+bytes=5000000 time=2.390919s speed=2091246B/s

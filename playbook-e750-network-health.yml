@@ -1,0 +1,23 @@
+---
+# Phase 5: clean the WAN firewall zone and run the critical health check.
+#
+# From x280:
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-network-health.yml
+#
+# The AP/bridge migration is intentionally not performed; e750_ap_enabled is
+# false and the role refuses to turn it on without a tested bridge path.
+
+- name: GL-E750 — network cleanup + health
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Apply the network cleanup
+      ansible.builtin.include_role:
+        name: e750_network
+
+    - name: Verify the live state
+      ansible.builtin.include_role:
+        name: e750_health

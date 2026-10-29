@@ -1,0 +1,14 @@
+---
+# Run the critical health check on the E750. A failure is a real failure: the
+# role fails unless BSBF, endpoints, tproxy, both WANs, and the server egress
+# are healthy. 5 GHz absence is a warning only (known radio issue).
+
+- name: Run the E750 health check
+  ansible.builtin.raw: "SERVER_IP={{ e750_health_server_ip }} {{ lookup('file', e750_health_script) }}"
+  register: _e750_health
+  changed_when: false
+  failed_when: _e750_health.rc != 0
+
+- name: Show the health report
+  ansible.builtin.debug:
+    msg: "{{ _e750_health.stdout_lines }}"
