@@ -60,14 +60,14 @@ portal services. 86 contract tests pass.
 - [ ] ZMODEM (`sz`/`rz`) smoke test for file transfer; use `loadx`/`loady` in
       U-Boot, never typed write commands.
 - [ ] Take a fresh private backup before any flash/radio experiment.
-- [x] **5 GHz QCA9887 `skip_otp` lead**: `skip_otp=1` (via `insmod`) let the
-      radio initialize and beacon a 5 GHz AP on ch36/VHT80; no per-device
-      calibration and unstable across a full wifi restart. Disabled again.
-      See [`QCA9887-SKIP-OTP.md`](QCA9887-SKIP-OTP.md) and
-      `evidence/caldata/2026-10-29_skip-otp.md`.
-- [ ] Controlled 5 GHz retry with serial: `insmod skip_otp=1`, `wifi reload`
-      only, AP on a separate bridge, low txpower, association/throughput;
-      try `cal-pci` + `skip_otp`; persist only if stable.
+- [x] **5 GHz QCA9887 portal AP**: boot hook loads `skip_otp=1`; `phy2-ap0`
+      serves `TollGate-E750` on ch36/VHT80 -> `br-portal`; 2.4 GHz is the
+      STA/BSBF backhaul; cold boot verified, health OK. No per-device
+      calibration; txpower 10 dBm. See [`E750-RADIO5G.md`](E750-RADIO5G.md)
+      and [`QCA9887-SKIP-OTP.md`](QCA9887-SKIP-OTP.md).
+- [ ] Real 5 GHz client: association, DHCP, splash, payment, post-auth.
+- [ ] Try `cal-pci` + `skip_otp` for calibration/stability; add the boot hook
+      and radio1 defaults to the image.
 - [ ] Decide whether the 5 GHz repair is still required now that the combined
       2.4 GHz portal + BSBF path works (it is the long-term headroom fix).
 

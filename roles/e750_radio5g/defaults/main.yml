@@ -1,0 +1,11 @@
+---
+# 5 GHz portal AP on the QCA9887 using ath10k skip_otp=1.
+# The 2.4 GHz radio stays the STA/BSBF backhaul; the 2.4 GHz AP is disabled so
+# portal and backhaul do not share airtime.
+e750_radio5g_ssid: "TollGate-E750"
+e750_radio5g_channel: "36"
+e750_radio5g_htmode: "VHT80"
+e750_radio5g_country: "DE"
+e750_radio5g_txpower: "10"
+e750_radio5g_network: "portal"
+e750_radio5g_disable_2g_ap: true

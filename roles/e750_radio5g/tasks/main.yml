@@ -1,0 +1,59 @@
+---
+# Install the skip_otp boot hook and the 5 GHz portal AP config. The changes
+# take effect on the next boot; this role does not call `wifi reload` because a
+# full reload can race the 2.4 GHz STA/BSBF path.
+
+- name: Install the ath10k skip_otp boot hook
+  ansible.builtin.raw: |
+    set -e
+    cat > /etc/init.d/ath10k-skip-otp <<'E750_ATH10K_EOF'
+    #!/bin/sh /etc/rc.common
+    # Load ath10k with skip_otp=1 before wifi starts. The QCA9887 OTP read fails
+    # with -22; skipping OTP lets the radio initialize without per-device cal.
+    START=19
+    boot() {
+    	K=$(uname -r)
+    	rmmod ath10k_pci 2>/dev/null || true
+    	rmmod ath10k_core 2>/dev/null || true
+    	insmod /lib/modules/$K/ath10k_core.ko skip_otp=1 2>/dev/null || true
+    	insmod /lib/modules/$K/ath10k_pci.ko 2>/dev/null || true
+    }
+    E750_ATH10K_EOF
+    chmod +x /etc/init.d/ath10k-skip-otp
+    /etc/init.d/ath10k-skip-otp enable
+    ls -l /etc/init.d/ath10k-skip-otp
+  changed_when: true
+
+- name: Configure the 5 GHz portal AP
+  ansible.builtin.raw: |
+    set -e
+    uci set wireless.radio1=wifi-device
+    uci set wireless.radio1.type='mac80211'
+    uci set wireless.radio1.path='pci0000:00/0000:00:00.0'
+    uci set wireless.radio1.band='5g'
+    uci set wireless.radio1.channel='{{ e750_radio5g_channel }}'
+    uci set wireless.radio1.htmode='{{ e750_radio5g_htmode }}'
+    uci set wireless.radio1.country='{{ e750_radio5g_country }}'
+    uci set wireless.radio1.txpower='{{ e750_radio5g_txpower }}'
+    uci set wireless.radio1.disabled='0'
+    uci set wireless.default_radio1=wifi-iface
+    uci set wireless.default_radio1.device='radio1'
+    uci set wireless.default_radio1.network='{{ e750_radio5g_network }}'
+    uci set wireless.default_radio1.mode='ap'
+    uci set wireless.default_radio1.ssid='{{ e750_radio5g_ssid }}'
+    uci set wireless.default_radio1.encryption='none'
+    uci -q delete wireless.default_radio1.key || true
+    uci set wireless.default_radio1.isolate='1'
+    uci set wireless.default_radio1.disabled='0'
+    if [ '{{ e750_radio5g_disable_2g_ap }}' = 'True' ]; then
+      uci set wireless.default_radio0.disabled='1'
+    fi
+    uci commit wireless
+    echo "radio1=$(uci -q get wireless.radio1.channel) ap=$(uci -q get wireless.default_radio1.ssid) 2g_ap_disabled=$(uci -q get wireless.default_radio0.disabled)"
+  changed_when: true
+
+- name: State that a reboot is required
+  ansible.builtin.debug:
+    msg:
+      - "5 GHz config written; reboot to load ath10k with skip_otp=1."
+      - "After reboot run playbook-e750-radio5g-verify.yml."

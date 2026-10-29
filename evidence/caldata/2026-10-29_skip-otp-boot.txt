@@ -1,0 +1,55 @@
+# QCA9887 skip_otp cold-boot — 2026-10-29
+
+## config
+wireless.default_radio0.disabled='1'
+wireless.radio1=wifi-device
+wireless.radio1.type='mac80211'
+wireless.radio1.path='pci0000:00/0000:00:00.0'
+wireless.radio1.band='5g'
+wireless.radio1.channel='36'
+wireless.radio1.htmode='VHT80'
+wireless.radio1.country='DE'
+wireless.radio1.txpower='10'
+wireless.radio1.disabled='0'
+wireless.default_radio1=wifi-iface
+wireless.default_radio1.device='radio1'
+wireless.default_radio1.network='portal'
+wireless.default_radio1.mode='ap'
+wireless.default_radio1.ssid='TollGate-E750'
+wireless.default_radio1.encryption='none'
+wireless.default_radio1.disabled='0'
+wireless.default_radio1.isolate='1'
+Y
+-rwxr-xr-x    1 root     root           265 Oct 29 16:57 /etc/init.d/ath10k-skip-otp
+
+## interfaces
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0             UP             192.168.8.1/24 fd33:1825:ff29::1/60 fe80::9683:c4ff:fe4d:fc38/64 
+wwan0            UNKNOWN        10.192.82.101/30 fe80::f03e:41ff:fe4f:29fa/64 
+br-portal        UP             10.0.0.1/24 fe80::9683:c4ff:fe4d:fc3a/64 
+phy2-ap0         UP             
+phy1-sta0        UP             192.168.50.123/24 fe80::9683:c4ff:fe4d:fc39/64 
+phy#2
+	Interface phy2-ap0
+		ssid TollGate-E750
+		type AP
+		channel 36 (5180 MHz), width: 80 MHz, center1: 5210 MHz
+phy#1
+	Interface phy1-sta0
+		ssid hermes-lan
+		type managed
+		channel 11 (2462 MHz), width: 20 MHz, center1: 2462 MHz
+
+## client scan
+	SSID: TollGate-E750
+	Supported rates: 6.0* 9.0 12.0* 18.0 24.0* 36.0 48.0 54.0 
+	Country: DE	Environment: Indoor/Outdoor
+		Channels [36 - 48] @ 23 dBm
+
+## health
+== WAN firewall zone ==
+firewall.@zone[0].name='lan'
+firewall.@zone[0].network='lan'
+firewall.@zone[1].name='wan'
+firewall.@zone[1].network='wwan' 'wwan1'
+RESULT OK

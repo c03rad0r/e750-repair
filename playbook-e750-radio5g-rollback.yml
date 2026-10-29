@@ -1,0 +1,18 @@
+---
+# Disable the 5 GHz radio and return to the 2.4 GHz portal AP. Reboot after.
+- name: GL-E750 — roll back the 5 GHz portal AP
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+  tasks:
+    - name: Disable radio1 and the boot hook
+      ansible.builtin.raw: |
+        set -e
+        uci set wireless.radio1.disabled='1'
+        uci -q delete wireless.default_radio1 || true
+        uci set wireless.default_radio0.disabled='0'
+        uci commit wireless
+        /etc/init.d/ath10k-skip-otp disable 2>/dev/null || true
+        echo "radio1 disabled; 2.4 GHz AP re-enabled; reboot required"
+      changed_when: true

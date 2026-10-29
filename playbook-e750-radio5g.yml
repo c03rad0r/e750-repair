@@ -1,0 +1,12 @@
+---
+# Configure the 5 GHz portal AP (QCA9887 + skip_otp=1). Apply from x280, then
+# reboot, then run playbook-e750-radio5g-verify.yml.
+- name: GL-E750 — 5 GHz portal AP
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+  tasks:
+    - name: Apply the 5 GHz role
+      ansible.builtin.include_role:
+        name: e750_radio5g
