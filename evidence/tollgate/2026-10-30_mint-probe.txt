@@ -1,0 +1,25 @@
+# Mint reachability — 2026-10-30
+
+## Probe from the E750 / Hetzner container / T14
+mint.coinos.io            200
+mint.minibits.cash        EOF from all three vantage points (down)
+mint.lnserver.com         DNS: no such host
+mint.macadamia.cash       200 (4 keysets)
+mint.westernbtc.com       200 (2 keysets)
+mint.cubabitcoin.org      200 (3 keysets)
+kashu.me                  200 (1 keyset)
+
+## Daemon
+Wallet init failed on minibits (EOF), started in degraded mode.
+Recovered at 23:45:11 when the other mints answered.
+Accepted before: coinos, minibits, lnserver, macadamia, westernbtc, kashu, cubabitcoin
+Accepted after:  coinos, macadamia, westernbtc, kashu, cubabitcoin
+
+## Prune
+Stopped tollgate-wrt, removed the minibits and lnserver objects from
+/etc/tollgate/config.json, restarted. Health: config_ok, wallet_ok, status ok.
+Braces balanced; backup at /etc/tollgate/config.json.bak-*.
+
+## Wallet
+The previous 1 sat was on minibits, so wallet_info shows 0 while that mint is
+down. New payments can use coinos/cubabitcoin/etc.

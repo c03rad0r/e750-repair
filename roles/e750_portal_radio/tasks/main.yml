@@ -1,0 +1,71 @@
+---
+- name: Back up the wireless config
+  ansible.builtin.raw: |
+    set -e
+    cp /etc/config/wireless /etc/config/wireless.before-2g-$(date +%s)
+    ls -1 /etc/config/wireless.before-2g-* | tail -1
+  changed_when: true
+
+- name: Put the portal AP on 2.4 GHz and disable 5 GHz
+  ansible.builtin.raw: |
+    set -e
+    uci set wireless.radio0.disabled='0'
+    uci set wireless.radio0.channel='{{ e750_portal_radio_channel }}'
+    uci set wireless.radio0.htmode='{{ e750_portal_radio_htmode }}'
+    uci set wireless.radio0.country='{{ e750_portal_radio_country }}'
+    uci set wireless.radio0.txpower='{{ e750_portal_radio_txpower }}'
+
+    uci set wireless.default_radio0=wifi-iface
+    uci set wireless.default_radio0.device='radio0'
+    uci set wireless.default_radio0.network='portal'
+    uci set wireless.default_radio0.mode='ap'
+    uci set wireless.default_radio0.ssid='{{ e750_portal_radio_ssid }}'
+    uci set wireless.default_radio0.encryption='none'
+    uci -q delete wireless.default_radio0.key || true
+    uci set wireless.default_radio0.isolate='1'
+    uci set wireless.default_radio0.macaddr='{{ e750_portal_radio_macaddr }}'
+    uci set wireless.default_radio0.disabled='0'
+
+    uci set wireless.radio1.disabled='1'
+    uci -q delete wireless.default_radio1 || true
+    uci commit wireless
+    echo "radio0=$(uci -q get wireless.radio0.channel)/$(uci -q get wireless.radio0.disabled) radio1=$(uci -q get wireless.radio1.disabled) ap=$(uci -q get wireless.default_radio0.ssid) sta=$(uci -q get wireless.sta.ssid)"
+  changed_when: true
+
+- name: Free the 5 GHz driver
+  ansible.builtin.raw: |
+    /etc/init.d/ath10k-skip-otp disable 2>/dev/null || true
+    rmmod ath10k_pci 2>/dev/null || true
+    rmmod ath10k_core 2>/dev/null || true
+    lsmod | grep ath10k || echo "ath10k unloaded"
+  changed_when: true
+
+- name: Restart the radios
+  ansible.builtin.raw: |
+    wifi down
+    sleep 2
+    wifi up
+    sleep 12
+    echo restarted
+  changed_when: true
+  failed_when: false
+
+- name: Verify the 2.4 GHz AP + STA
+  ansible.builtin.raw: |
+    echo "=== wifi ==="
+    iw dev | grep -E 'Interface|ssid|channel|type|addr'
+    echo "=== ap ==="
+    iw dev phy1-ap0 info 2>/dev/null | head -8
+    echo "=== sta ==="
+    iw dev phy1-sta0 link 2>/dev/null | grep -E 'Connected|SSID|signal'
+    echo "=== hostapd ==="
+    logread | grep -iE 'hostapd|phy1-ap0' | tail -6
+    echo "=== bsbf ==="
+    bsbf-bonding --status 2>&1 || true
+    ip mp e 2>&1 || true
+  register: _radio_verify
+  changed_when: false
+
+- name: Show the radio state
+  ansible.builtin.debug:
+    msg: "{{ _radio_verify.stdout_lines }}"

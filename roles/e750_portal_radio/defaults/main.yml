@@ -1,0 +1,11 @@
+---
+# Put the captive-portal AP on the calibrated 2.4 GHz radio, sharing it with the
+# STA uplink. The 5 GHz QCA9887 is uncalibrated (skip_otp) and unstable under a
+# real phone, so it is disabled.
+e750_portal_radio_ssid: "TollGate-E750"
+e750_portal_radio_channel: "11"
+e750_portal_radio_htmode: "HT20"
+e750_portal_radio_txpower: "20"
+e750_portal_radio_country: "DE"
+e750_portal_radio_macaddr: "02:83:c4:4d:fc:3b"
+e750_portal_radio_bridge: "br-portal"

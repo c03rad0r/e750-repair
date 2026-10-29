@@ -1,0 +1,33 @@
+# Phone disconnect on the 5 GHz portal AP — 2026-10-30
+
+## Symptom
+The phone associated, obtained DHCP, then was dropped after ~10 s and fell back
+to another network.
+
+## hostapd (5 GHz, phy2)
+23:45:15  STA ca:83:c5:81:79:9f authenticated / associated (aid 1)
+23:45:15  AP-STA-CONNECTED ca:83:c5:81:79:9f
+23:45:19  AP-STA-DISCONNECTED ca:83:c5:81:79:9f / disassociated
+23:45:20  deauthenticated due to inactivity (timer DEAUTH/REMOVE)
+
+Earlier attempts show the same pattern (76:1c:1c:cf:28:3c, 5e:28:38:30:3a:5e).
+Two leases were issued (10.0.0.159, 10.0.0.160).
+
+## Radio
+ieee80211 phy2: Hardware restart was requested
+ath10k_pci ... failed to read device EEPROM at 0000
+ath10k_pci ... failed to read calibration data from EEPROM: -22
+ath10k_pci ... device successfully recovered
+
+5 GHz ran skip_otp (uncalibrated) at txpower 10 dBm.
+
+## Fix applied
+Portal moved to the calibrated 2.4 GHz radio (AP+STA on phy1), 5 GHz disabled and
+the ath10k driver unloaded:
+
+before: CPU 0% idle, Mem 22 MB free
+after:  CPU 90% idle, Mem 41 MB free
+
+iw dev:
+  phy1-sta0 hermes-lan ch11
+  phy1-ap0  TollGate-E750 ch11 (02:83:c4:4d:fc:3b, 20 dBm)
