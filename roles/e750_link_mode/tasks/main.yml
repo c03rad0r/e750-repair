@@ -1,0 +1,60 @@
+---
+- name: Install the metrics sampler
+  ansible.builtin.raw: |
+    set -e
+    mkdir -p /etc/e750
+    cat > /usr/bin/e750-path-metrics.sh <<'E750_METRICS_EOF'
+    {{ lookup('file', playbook_dir ~ '/scripts/e750-path-metrics.sh') }}
+    E750_METRICS_EOF
+    chmod 755 /usr/bin/e750-path-metrics.sh
+    head -1 /usr/bin/e750-path-metrics.sh
+  changed_when: true
+
+- name: Install the link-mode controller
+  ansible.builtin.raw: |
+    set -e
+    cat > /usr/bin/e750-link-mode.sh <<'E750_MODE_EOF'
+    {{ lookup('file', playbook_dir ~ '/scripts/e750-link-mode.sh') }}
+    E750_MODE_EOF
+    chmod 755 /usr/bin/e750-link-mode.sh
+    head -1 /usr/bin/e750-link-mode.sh
+  changed_when: true
+
+- name: Write the link-mode config
+  ansible.builtin.raw: |
+    set -e
+    cat > /etc/config/e750_linkmode <<'E750_LINKMODE_EOF'
+    {{ lookup('template', playbook_dir ~ '/roles/e750_link_mode/templates/e750_linkmode.j2') }}
+    E750_LINKMODE_EOF
+    uci commit e750_linkmode
+    uci show e750_linkmode | head -4
+  changed_when: true
+
+- name: Seed the mode state
+  ansible.builtin.raw: |
+    [ -f /etc/e750/mode ] || echo standby > /etc/e750/mode
+    [ -f /etc/e750/mode.state ] || echo "standby $(date +%s)" > /etc/e750/mode.state
+    cat /etc/e750/mode
+  changed_when: true
+
+- name: Install the cron entry
+  ansible.builtin.raw: |
+    set -e
+    touch /etc/crontabs/root
+    grep -q 'e750-link-mode.sh tick' /etc/crontabs/root || \
+      echo '* * * * * /usr/bin/e750-link-mode.sh tick >/dev/null 2>&1' >> /etc/crontabs/root
+    /etc/init.d/cron restart >/dev/null 2>&1 || true
+    grep 'e750-link-mode' /etc/crontabs/root
+  changed_when: true
+
+- name: Take the first sample
+  ansible.builtin.raw: |
+    /usr/bin/e750-link-mode.sh tick
+    sleep 1
+    /usr/bin/e750-link-mode.sh status
+  register: _linkmode_first
+  changed_when: true
+
+- name: Show the controller state
+  ansible.builtin.debug:
+    msg: "{{ _linkmode_first.stdout_lines }}"

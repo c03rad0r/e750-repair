@@ -1,0 +1,13 @@
+---
+# Branding only: does not touch br-portal, radios, BSBF or the tproxy.
+#
+#   ssh x280
+#   cd ~/e750-repair
+#   ansible-playbook -i inventory/e750-ssh.yml playbook-e750-portal-brand.yml
+- name: GL-E750 — TollGate portal branding
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+  roles:
+    - role: e750_portal_brand
