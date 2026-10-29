@@ -1,0 +1,21 @@
+# E750 MCU probe — 2026-10-29T10:12:29Z
+
+## /dev/ttyS0 at 115200 (askfirst stopped for the probe, then restored)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+== version: {"version":"1"}
+bytes=0
+== status: {"mcu_status":"1"}
+bytes=0
+no MCU reply on /dev/ttyS0 at 115200
+probe_rc=1
+
+## baud sweep (documented version query)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+baud=9600 bytes=0
+baud=19200 bytes=0
+baud=38400 bytes=0
+baud=57600 bytes=0
+baud=115200 bytes=0
+askfirst restored
