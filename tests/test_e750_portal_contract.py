@@ -89,3 +89,19 @@ def test_no_secrets_or_psk() -> None:
         text = read(path)
         assert "PRIVATE KEY" not in text
         assert ("c03rad0r" + "123") not in text
+
+
+def test_role_configures_nodogsplash_and_portal_uhttpd() -> None:
+    tasks = read("roles/e750_portal/tasks/main.yml")
+    for needle in (
+        "nodogsplash.@nodogsplash[0].gatewayinterface",
+        "gatewayiprange",
+        "gatewayaddress",
+        "authenticated_users='allow to 0.0.0.0/0'",
+        "uhttpd.portal=uhttpd",
+        "listen_http='0.0.0.0:2051'",
+        "tollgate-captive-portal-site",
+        "/etc/init.d/nodogsplash enable",
+        "/etc/init.d/tollgate-wrt enable",
+    ):
+        assert needle in tasks, needle
