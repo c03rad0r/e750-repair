@@ -1,0 +1,8 @@
+#!/bin/sh
+# Re-apply the BSBF nft rules without flushing OMR's live ruleset.
+set -e
+for handle in $(nft -a list chain inet omr forward 2>/dev/null \
+	| awk '/bsbf container/ {print $NF}'); do
+	nft delete rule inet omr forward handle "$handle" 2>/dev/null || true
+done
+nft -f /etc/nftables/custom.d/bsbf.nft

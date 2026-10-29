@@ -1,0 +1,10 @@
+#!/bin/sh
+# Idempotent host-side bridge for the BSBF container.
+set -e
+if ! ip link show {{ bsbf_container_bridge }} >/dev/null 2>&1; then
+	ip link add {{ bsbf_container_bridge }} type bridge
+fi
+ip link set {{ bsbf_container_bridge }} up
+if ! ip -4 addr show dev {{ bsbf_container_bridge }} | grep -q '{{ bsbf_container_host_ip }}/'; then
+	ip addr add {{ bsbf_container_host_ip }}/{{ bsbf_container_prefix }} dev {{ bsbf_container_bridge }}
+fi

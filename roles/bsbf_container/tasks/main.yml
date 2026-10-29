@@ -1,0 +1,233 @@
+---
+# Provision a Debian container for the BSBF server on the OMR host.
+#
+# Nothing here restarts an OMR service. The only host-level changes are the
+# package install, a bridge, the nspawn unit and one nft file.
+
+- name: Require Debian 13 on the container host
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Debian'
+      - ansible_facts['distribution_major_version'] == '13'
+      - ansible_facts['service_mgr'] == 'systemd'
+    fail_msg: >-
+      The container host must be Debian 13 with systemd; got
+      {{ ansible_facts['distribution'] }}
+      {{ ansible_facts['distribution_major_version'] }}
+      ({{ ansible_facts['service_mgr'] }}).
+
+- name: Require an SSH key for the container
+  ansible.builtin.assert:
+    that:
+      - bsbf_container_authorized_keys | length > 0
+    fail_msg: "bsbf_container_authorized_keys is empty; pass the controller key."
+
+- name: Record the OMR baseline before any change
+  ansible.builtin.command: >-
+    systemctl is-active {{ bsbf_container_expected_omr_units | join(' ') }}
+  register: _bsbfc_omr_before
+  changed_when: false
+  failed_when: false
+  when: bsbf_container_manage_omr_check | bool
+
+- name: Assert the OMR server is healthy before we start
+  ansible.builtin.assert:
+    that:
+      - _bsbfc_omr_before.stdout_lines | length == bsbf_container_expected_omr_units | length
+      - _bsbfc_omr_before.stdout_lines | reject('equalto', 'active') | list | length == 0
+    fail_msg: >-
+      OMR is not healthy before the change:
+      {{ _bsbfc_omr_before.stdout_lines }}
+  when: bsbf_container_manage_omr_check | bool
+
+- name: Assert the OMR nft table is present
+  ansible.builtin.command: nft list table inet omr
+  register: _bsbfc_nft
+  changed_when: false
+
+- name: Install the container tooling
+  ansible.builtin.apt:
+    name:
+      - systemd-container
+      - debootstrap
+      - mmdebstrap
+    state: present
+    update_cache: true
+
+- name: Ensure the nspawn and nft directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /etc/systemd/nspawn
+    - /etc/nftables/custom.d
+    - /var/lib/machines
+
+- name: Install the bridge helper
+  ansible.builtin.template:
+    src: bsbf-net.sh.j2
+    dest: /usr/local/sbin/bsbf-net
+    mode: "0755"
+
+- name: Install the idempotent nft apply helper
+  ansible.builtin.template:
+    src: bsbf-nft-apply.sh.j2
+    dest: /usr/local/sbin/bsbf-nft-apply
+    mode: "0755"
+
+- name: Install the nft rules
+  ansible.builtin.template:
+    src: bsbf.nft.j2
+    dest: /etc/nftables/custom.d/bsbf.nft
+    mode: "0644"
+
+- name: Apply the nft rules without flushing OMR
+  ansible.builtin.command: /usr/local/sbin/bsbf-nft-apply
+  changed_when: true
+
+- name: Create the host bridge unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/bsbf-net.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=BSBF container bridge
+      After=network.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/local/sbin/bsbf-net
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Read the container rootfs marker
+  ansible.builtin.stat:
+    path: "{{ bsbf_container_rootfs }}/etc/debian_version"
+  register: _bsbfc_rootfs
+
+- name: Stop the container before recreating it
+  ansible.builtin.systemd:
+    name: "systemd-nspawn@{{ bsbf_container_name }}.service"
+    state: stopped
+  failed_when: false
+  when: bsbf_container_recreate | bool and _bsbfc_rootfs.stat.exists
+
+- name: Recreate the container rootfs
+  ansible.builtin.command: "rm -rf {{ bsbf_container_rootfs }}"
+  when: bsbf_container_recreate | bool and _bsbfc_rootfs.stat.exists
+  changed_when: true
+
+- name: Build the container rootfs
+  ansible.builtin.command:
+    cmd: >-
+      mmdebstrap
+      --variant=minbase
+      --arch={{ bsbf_container_arch }}
+      --include={{ bsbf_container_packages | join(',') }}
+      {{ bsbf_container_suite }}
+      {{ bsbf_container_rootfs }}
+      {{ bsbf_container_mirror }}
+    creates: "{{ bsbf_container_rootfs }}/etc/debian_version"
+
+- name: Set the container hostname
+  ansible.builtin.copy:
+    dest: "{{ bsbf_container_rootfs }}/etc/hostname"
+    content: "{{ bsbf_container_name }}\n"
+    mode: "0644"
+
+- name: Configure the container veth
+  ansible.builtin.template:
+    src: 10-host0.network.j2
+    dest: "{{ bsbf_container_rootfs }}/etc/systemd/network/10-host0.network"
+    mode: "0644"
+
+- name: Enable networking and sshd in the rootfs
+  ansible.builtin.command: >-
+    systemctl --root={{ bsbf_container_rootfs }} enable
+    systemd-networkd.service ssh.service
+  register: _bsbfc_enable
+  changed_when: "'Created symlink' in _bsbfc_enable.stdout"
+
+- name: Read the container machine-id
+  ansible.builtin.stat:
+    path: "{{ bsbf_container_rootfs }}/etc/machine-id"
+  register: _bsbfc_machine_id
+
+- name: Initialise the container machine-id
+  ansible.builtin.command: >-
+    systemd-machine-id-setup --root={{ bsbf_container_rootfs }}
+  when: not _bsbfc_machine_id.stat.exists or _bsbfc_machine_id.stat.size == 0
+  changed_when: true
+
+- name: Generate the container ssh host keys
+  ansible.builtin.command: >-
+    ssh-keygen -A -f {{ bsbf_container_rootfs }}
+  changed_when: false
+
+- name: Create the container root ssh directory
+  ansible.builtin.file:
+    path: "{{ bsbf_container_rootfs }}/root/.ssh"
+    state: directory
+    mode: "0700"
+
+- name: Install the container authorized keys
+  ansible.builtin.copy:
+    dest: "{{ bsbf_container_rootfs }}/root/.ssh/authorized_keys"
+    content: "{{ bsbf_container_authorized_keys | join('\n') }}\n"
+    mode: "0600"
+
+- name: Install the nspawn settings
+  ansible.builtin.template:
+    src: bsbf1.nspawn.j2
+    dest: "/etc/systemd/nspawn/{{ bsbf_container_name }}.nspawn"
+    mode: "0644"
+
+- name: Create the nspawn drop-in directory
+  ansible.builtin.file:
+    path: "/etc/systemd/system/systemd-nspawn@{{ bsbf_container_name }}.service.d"
+    state: directory
+    mode: "0755"
+
+- name: Install the nspawn drop-in
+  ansible.builtin.copy:
+    dest: "/etc/systemd/system/systemd-nspawn@{{ bsbf_container_name }}.service.d/10-bsbf.conf"
+    mode: "0644"
+    content: |
+      [Unit]
+      Requires=bsbf-net.service
+      After=bsbf-net.service network-online.target
+      Wants=network-online.target
+
+      [Service]
+      CPUQuota={{ bsbf_container_cpu_quota }}
+      MemoryMax={{ bsbf_container_memory_max }}
+
+- name: Enable the bridge unit
+  ansible.builtin.systemd:
+    name: bsbf-net.service
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Enable the container
+  ansible.builtin.systemd:
+    name: "systemd-nspawn@{{ bsbf_container_name }}.service"
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Wait for the container sshd
+  ansible.builtin.wait_for:
+    host: "{{ bsbf_container_ip }}"
+    port: 22
+    timeout: 90
+
+- name: Report the container
+  ansible.builtin.debug:
+    msg:
+      - "container {{ bsbf_container_name }} on {{ bsbf_container_bridge }}"
+      - "host {{ bsbf_container_host_ip }}/{{ bsbf_container_prefix }} -> container {{ bsbf_container_ip }}"
+      - "published TCP {{ bsbf_container_ports }}"

@@ -1,0 +1,53 @@
+---
+# BSBF server in a systemd-nspawn container.
+#
+# The pinned BSBF installer stops/disables the host `xray` unit and copies
+# /etc/systemd/system/xray@.service. On the OMR host both are wrong: OMR owns
+# xray.service and the template does not exist. A container with its own PID,
+# mount and network namespaces makes the installer harmless to OMR.
+
+bsbf_container_enabled: true
+bsbf_container_name: bsbf1
+bsbf_container_suite: trixie
+bsbf_container_arch: arm64
+bsbf_container_mirror: "http://deb.debian.org/debian"
+bsbf_container_rootfs: "/var/lib/machines/{{ bsbf_container_name }}"
+bsbf_container_recreate: false
+
+# Host-side network. A bridge gives the container a stable interface name that
+# the nft forward rules can match.
+bsbf_container_bridge: bsbfbr0
+bsbf_container_host_ip: "10.77.0.1"
+bsbf_container_ip: "10.77.0.2"
+bsbf_container_prefix: 30
+
+bsbf_container_ports: "16384-16400"
+bsbf_container_cpu_quota: "50%"
+bsbf_container_memory_max: "1G"
+
+# Public keys allowed to SSH into the container (root). The controller key is
+# passed in by the playbook so it is not hard-coded here.
+bsbf_container_authorized_keys: []
+
+# Packages inside the rootfs. The BSBF installer adds bash/nodejs itself, but
+# doing it here keeps the image deterministic.
+bsbf_container_packages:
+  - systemd
+  - systemd-sysv
+  - iproute2
+  - openssh-server
+  - ca-certificates
+  - curl
+  - bash
+  - nodejs
+  - python3
+  - python3-apt
+  - procps
+  - nftables
+
+# Refuse to touch a host that does not look like the OMR server.
+bsbf_container_expected_omr_units:
+  - omr.service
+  - xray.service
+
+bsbf_container_manage_omr_check: true

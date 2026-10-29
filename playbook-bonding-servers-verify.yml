@@ -1,0 +1,62 @@
+---
+# Assert both bonding-server stacks and the container.
+#
+#   ansible-playbook -i inventory/bsbf-servers.yml playbook-bonding-servers-verify.yml
+
+- name: Verify the OMR server
+  hosts: mptcp_servers
+  gather_facts: false
+  become: true
+  any_errors_fatal: true
+  tasks:
+    - name: Read the OMR units
+      ansible.builtin.command: systemctl is-active omr.service xray.service
+      register: _omr_units
+      changed_when: false
+
+    - name: Assert OMR is active
+      ansible.builtin.assert:
+        that:
+          - _omr_units.stdout_lines | reject('equalto', 'active') | list | length == 0
+        fail_msg: "OMR changed state: {{ _omr_units.stdout_lines }}"
+
+    - name: Read the container state
+      ansible.builtin.command: machinectl show bsbf1 -p State --value
+      register: _ctr
+      changed_when: false
+
+    - name: Assert the container is running
+      ansible.builtin.assert:
+        that:
+          - _ctr.stdout | trim == 'running'
+        fail_msg: "The BSBF container is not running"
+
+    - name: Read the BSBF listeners inside the container
+      ansible.builtin.shell: >-
+        nsenter -t "$(machinectl show bsbf1 -p Leader --value)" -n ss -lnt
+      register: _ctr_ports
+      changed_when: false
+
+    - name: Assert the BSBF port is listening
+      ansible.builtin.assert:
+        that:
+          - "':16384' in _ctr_ports.stdout"
+        fail_msg: "No BSBF listener in the container"
+
+    - name: Read the published NAT rule
+      ansible.builtin.command: nft list table ip bsbf_nat
+      register: _nat
+      changed_when: false
+
+    - name: Assert the DNAT rule is present
+      ansible.builtin.assert:
+        that:
+          - "'dnat to 10.77.0.2' in _nat.stdout"
+        fail_msg: "The container DNAT rule is missing"
+
+    - name: Show the verified layout
+      ansible.builtin.debug:
+        msg:
+          - "OMR: {{ _omr_units.stdout_lines | join(', ') }}"
+          - "container: {{ _ctr.stdout | trim }}"
+          - "BSBF: 16384-16400 -> 10.77.0.2"

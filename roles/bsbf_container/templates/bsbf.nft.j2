@@ -1,0 +1,19 @@
+# BSBF container NAT/DNAT. Included last by /etc/nftables.conf (after the OMR
+# ruleset) and safe to re-apply on its own.
+add table ip bsbf_nat
+delete table ip bsbf_nat
+table ip bsbf_nat {
+	chain prerouting {
+		type nat hook prerouting priority dstnat; policy accept;
+		tcp dport {{ bsbf_container_ports }} dnat to {{ bsbf_container_ip }}
+	}
+
+	chain postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip saddr {{ bsbf_container_host_ip }}/{{ bsbf_container_prefix }} oifname != "{{ bsbf_container_bridge }}" masquerade
+	}
+}
+
+# OMR's forward chain ends in a reject, so the container needs explicit accepts.
+insert rule inet omr forward iifname "{{ bsbf_container_bridge }}" accept comment "bsbf container"
+insert rule inet omr forward oifname "{{ bsbf_container_bridge }}" accept comment "bsbf container"

@@ -1,11 +1,22 @@
 ---
-# BSBF server transport. The server is a fleet VPS; the E750 client is separate.
+# Bonding-server transport.
 #
-#   ansible-playbook -i inventory/bsbf-servers.yml playbook-bsbf-server.yml
+#   ansible-playbook -i inventory/bsbf-servers.yml playbook-bonding-servers.yml
 #
-# The host is addressed over the FIPS mesh from the operator machine; the
-# `debian` user's key is in the operator ssh-agent. Do not commit private keys.
+# Two server types run in parallel:
+#
+#   hermes-nvme        BSBF server (Houston), host namespace
+#   hermes-hel1-host   Hetzner OMR host; also hosts the BSBF container
+#   hermes-hel1        the BSBF container itself (10.77.0.2 over ProxyJump)
+#
+# `hermes-hel1` only exists after `roles/bsbf_container` has run, so use
+# playbook-bonding-servers.yml rather than playbook-bsbf-server.yml alone.
+# Keys live in the operator ssh-agent. Do not commit private keys.
+
 all:
+  vars:
+    # Public key copied into the BSBF container for Ansible. Override with -e.
+    bsbf_container_controller_key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_ed25519.pub') }}"
   children:
     bsbf_servers:
       hosts:
@@ -19,3 +30,32 @@ all:
             -o ServerAliveCountMax=3
           ansible_become: true
           ansible_become_method: sudo
+        hermes-hel1:
+          ansible_host: 10.77.0.2
+          ansible_port: 22
+          ansible_user: root
+          ansible_ssh_common_args: >-
+            -o ProxyJump=hermes-deploy@167.235.218.44:65222
+            -o StrictHostKeyChecking=accept-new
+            -o ConnectTimeout=10
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=3
+          ansible_become: false
+
+    bsbf_container_hosts:
+      hosts:
+        hermes-hel1-host:
+          ansible_host: 167.235.218.44
+          ansible_port: 65222
+          ansible_user: hermes-deploy
+          ansible_ssh_common_args: >-
+            -o StrictHostKeyChecking=accept-new
+            -o ConnectTimeout=10
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=3
+          ansible_become: true
+          ansible_become_method: sudo
+
+    mptcp_servers:
+      children:
+        bsbf_container_hosts:

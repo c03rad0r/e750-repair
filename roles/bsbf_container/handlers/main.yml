@@ -1,0 +1,10 @@
+---
+- name: Apply the BSBF nft rules
+  ansible.builtin.command: /usr/local/sbin/bsbf-nft-apply
+  changed_when: true
+
+- name: Restart the BSBF container
+  ansible.builtin.systemd:
+    name: "systemd-nspawn@{{ bsbf_container_name }}"
+    state: restarted
+    daemon_reload: true
