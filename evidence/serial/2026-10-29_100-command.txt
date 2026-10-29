@@ -1,0 +1,18 @@
+# E750 serial raw 100-command test — 2026-10-29
+
+command: serial-tx-test.py /dev/ttyE750 --count 100 --wake-crs 8
+result: clean=96/100 corrupt=4
+
+## first failure
+[16] FAIL 'echo SE�IAL_3042027_16\nSE�IAL_3042027_16\nroot@e750-lab:~# '
+
+## tail
+[99] OK 'echo SERIAL_3042027_99\nSERIAL_3042027_99\nroot@e750-lab:~# '
+summary clean=96/100 corrupt=4
+first_failure='echo SE�IAL_3042027_16\nSE�IAL_3042027_16\nroot@e750-lab:~# '
+
+## interpretation
+- the re-soldered cable is usable, but the raw link is not 100% reliable.
+- a 4% command error rate is not acceptable for typed U-Boot/flash commands.
+- use scripts/serial-exec.py (SHA-256 payload + retransmit) for Linux shell commands.
+- use XMODEM/YMODEM/ZMODEM or U-Boot loadx/loady for files; verify SHA-256 on the device.

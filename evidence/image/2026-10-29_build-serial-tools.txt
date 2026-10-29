@@ -1,0 +1,8 @@
+# E750 image with serial tools — 2026-10-29T16:43:38Z
+
+05152fedf29d63b8e79d4ac2db03f9360274343075a463b7b6cc8464d962c7dd  image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/bin/targets/ath79/nand/openwrt-25.12.5-ath79-nand-glinet_gl-e750-squashfs-sysupgrade.bin
+-rw-rw-r-- 1 c08rad0r c08rad0r 16650512 Oct 29 17:43 image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/bin/targets/ath79/nand/openwrt-25.12.5-ath79-nand-glinet_gl-e750-squashfs-sysupgrade.bin
+
+190
+coreutils-base64 - 9.9-r2
+lrzsz - 0.12.21-r1

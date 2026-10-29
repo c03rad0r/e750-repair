@@ -2,7 +2,8 @@
 
 Status: **implemented and live-tested** (2026-10-29). The E750 serial cable was
 re-soldered by the operator; raw command reliability improved from **0/5** to
-**57/58** commands, but one bit flip remained. `scripts/serial-exec.py` adds
+**96/100** commands, but errors remain (~4%). The checksummed channel caught a
+natural bit flip and retransmitted it. `scripts/serial-exec.py` adds
 payload and output checksums with retransmission so a corrupted line cannot be
 executed.
 
@@ -106,7 +107,10 @@ python3 scripts/serial-exec.py /dev/ttyE750 -f flash.sh --allow-dangerous
 - [x] Live tests: clean, dry-run, injected corruption, natural corruption,
       non-zero exit, output hash.
 - [x] `lrzsz` installed for ZMODEM; image package added.
-- [ ] 100-command + wiggle test on the re-soldered cable.
+- [x] 100-command test: **96/100 clean, 4 corrupt**; raw commands are not safe
+      for U-Boot/flash. Evidence `evidence/serial/2026-10-29_100-command.txt`.
+- [ ] Wiggle test; if errors cluster, reflow/swap the adapter before relying on
+      the raw link.
 - [ ] ZMODEM file-transfer smoke test (`sz`/`rz`).
 - [ ] Use the checksummed channel for the 5 GHz board-ID/EEPROM experiments.
 - [ ] Add a checksummed U-Boot `loady` runbook.
