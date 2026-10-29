@@ -1,0 +1,3 @@
+---
+e750_health_server_ip: "23.182.128.219"
+e750_health_script: "{{ playbook_dir }}/scripts/e750-health.sh"

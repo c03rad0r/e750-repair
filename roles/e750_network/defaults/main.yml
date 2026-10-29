@@ -1,0 +1,11 @@
+---
+# The AP is disabled (single 2.4 GHz radio is STA-only). Enabling the AP needs a
+# br-lan bridge migration; the role refuses it until that path is implemented.
+e750_ap_enabled: false
+
+# Current WAN interfaces are the STA (wwan) and the 4G MBIM (wwan1). The
+# firewall zone still carries stale wan/wan6/wan1 names from earlier configs.
+e750_firewall_wan_zone: "wan"
+e750_firewall_wan_networks:
+  - wwan
+  - wwan1
