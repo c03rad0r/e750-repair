@@ -1,17 +1,26 @@
 # GL-E750 remediation + BSBF IaC — plan and tracker
 
-Status: **IN PROGRESS.** PR #1 (BSBF IaC) `01176a4`, PR #2 (cal-only negative)
-`8c1e246`, and PR #3 (operator access) `dad1ecd` are merged. The cal-only
-experiment was negative (same `-22`, no `-122`, no 5 GHz) and was reverted.
-Next: board ID/EEPROM/OTP; 4G diagnostics; serial cable (physical).
+Status: **code complete; physical/decision items remain.** PRs #1–#13 are merged
+on `main` at `c471cbc`. The cal-only experiment was negative and reverted; 4G RF
+is healthy but plan-throttled; the serial adapter `BH00DL3M` is bad; the 24 h
+soak started `2026-10-29T10:15:23Z`. Next P0 is the physical serial
+swap/reflow; the 5 GHz lead is board-ID/EEPROM/OTP.
 
 ## Execution log
 
-- 2026-10-29 — PR #1 merged `01176a4`: BSBF server/client IaC.
-- 2026-10-29 — cal-pci-only experiment: negative; reverted; PR #2 merged
-  `8c1e246`.
-- 2026-10-29 — T14 operator key added to Dropbear; host key verified; PR #3
-  merged `dad1ecd`.
+- 2026-10-29 — PR #1 `01176a4`: BSBF client/server IaC.
+- 2026-10-29 — PR #2 `8c1e246`: cal-only experiment, negative, reverted.
+- 2026-10-29 — PR #3 `dad1ecd`: operator key access (x280 + T14).
+- 2026-10-29 — PR #4 `e386898`: tracker sync.
+- 2026-10-29 — PR #5 `36c26be`: 4G diagnostics (RF healthy, plan-throttled).
+- 2026-10-29 — PR #6 `9b54cd5`: serial fault isolated (E750 leg 0/5, MT6000 5/5).
+- 2026-10-29 — PR #7 `3abaa01`: WAN firewall cleanup + health check.
+- 2026-10-29 — PR #8 `6e6304a`: serial loopback + cold-joint/continuity runbook.
+- 2026-10-29 — PR #9 `c776230`: clean ImageBuilder image (16.6 MB, 188 pkgs).
+- 2026-10-29 — PR #10 `e17d928`: 5-minute health monitor (cron + syslog).
+- 2026-10-29 — PR #11 `9e44757`: MCU/OLED protocol investigation, daemon deferred.
+- 2026-10-29 — PR #12 `f1a9b6f`: TollGate v0.6.0 evaluation, no-go on this unit.
+- 2026-10-29 — PR #13 `c471cbc`: soak harness + final audit; soak started.
 
 This is the canonical tracker for the E750 work.
 
