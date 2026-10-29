@@ -1,0 +1,20 @@
+---
+# Install and start the 5-minute E750 health monitor, then run one sample.
+#
+# From x280:
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-monitor.yml
+#
+# The job logs to /tmp/e750-health.log (last 500 lines) and sends failures to
+# syslog with the tag e750-health. It does not change BSBF, WANs, or firewall
+# state; it only reads them.
+
+- name: GL-E750 — health monitor
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Apply the monitor role
+      ansible.builtin.include_role:
+        name: e750_monitor

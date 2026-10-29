@@ -213,8 +213,14 @@ handler that would recreate both.
 
 ## Phase 9 — monitoring, acceptance, and final merge
 
-- [ ] Add health checks: `bsbf-bonding --status`, `ip mp e`, nft tproxy,
-      `ifstatus wwan1/wwan`, egress, 4G data, 5 GHz presence.
+- [x] Add health checks: `bsbf-bonding --status`, `ip mp e`, nft tproxy,
+      `ifstatus wwan1/wwan`, egress, 4G data, 5 GHz presence
+      (`scripts/e750-health.sh`, `roles/e750_health`).
+- [x] Schedule a 5-minute cron monitor with a rotating log and syslog on
+      failure (`scripts/e750-health-cron.sh`, `roles/e750_monitor`,
+      `playbook-e750-monitor.yml`). Live: two `OK` samples.
+      Evidence `evidence/monitor/2026-10-29_cron-health.txt`; docs
+      `docs/E750-MONITOR.md`. PR #10 merged.
 - [ ] 24 h soak + reboot + failover + throughput evidence.
 - [ ] Update `STATUS.md`, `README.md`, docs, and this checklist.
 - [ ] Confirm every change is on `main` via PR; no unmerged branches.

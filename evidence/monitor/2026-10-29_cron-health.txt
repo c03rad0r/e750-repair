@@ -1,0 +1,28 @@
+# E750 health monitor — live capture 2026-10-29T10:11:25Z
+
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+=== sample 1 ===
+rc=0
+=== sample 2 ===
+rc=0
+=== log ===
+2026-10-29T10:11:26+0000 OK
+2026-10-29T10:11:29+0000 OK
+=== full health ===
+OK   egress 23.182.128.219
+== 5 GHz ==
+WARN 5 GHz radio absent (known QCA9887 repair issue)
+== 4G data ==
+wwan0_rx_bytes=3263547
+wwan0_tx_bytes=721990
+== WAN firewall zone ==
+firewall.@zone[0].name='lan'
+firewall.@zone[0].network='lan'
+firewall.@zone[1].name='wan'
+firewall.@zone[1].network='wwan' 'wwan1'
+RESULT OK
+=== crontab ===
+*/5 * * * * /usr/bin/e750-health-cron.sh
+=== crond ===
+20222 root      1424 S    /usr/sbin/crond -f -c /etc/crontabs -l 7
