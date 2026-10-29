@@ -1,0 +1,15 @@
+---
+# AP-only captive-portal bridge, separate from the management LAN.
+# eth0 stays 192.168.8.1 (management); the AP is on br-portal 10.0.0.1.
+e750_portal_ssid: "TollGate-E750"
+e750_portal_bridge: "br-portal"
+e750_portal_ip: "10.0.0.1"
+e750_portal_netmask: "255.255.255.0"
+e750_portal_channel: "11"
+e750_portal_macaddr: "02:83:c4:4d:fc:3b"
+e750_portal_beacon_int: "100"
+e750_portal_dtim_period: "2"
+
+e750_portal_watchdog_seconds: 900
+e750_portal_confirm_file: "/tmp/e750-portal-confirmed"
+e750_portal_backup_dir: "/tmp/e750-portal-backup"

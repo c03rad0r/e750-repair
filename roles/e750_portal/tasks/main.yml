@@ -1,0 +1,131 @@
+---
+# Create br-portal + an AP-only captive-portal network, without touching eth0
+# or the management LAN. The STA uplink and BSBF are left alone; a watchdog
+# restores the previous config unless the operator confirms.
+
+  - name: Back up the config
+    ansible.builtin.raw: |
+      set -e
+      rm -rf {{ e750_portal_backup_dir }}
+      mkdir -p {{ e750_portal_backup_dir }}
+      for f in network wireless firewall dhcp nodogsplash uhttpd; do
+        [ -f /etc/config/$f ] && cp /etc/config/$f {{ e750_portal_backup_dir }}/ || true
+      done
+      rm -f {{ e750_portal_confirm_file }}
+      date -u +%Y-%m-%dT%H:%M:%SZ > {{ e750_portal_backup_dir }}/timestamp
+      ls -l {{ e750_portal_backup_dir }}
+    changed_when: true
+
+  - name: Create br-portal, the portal interface and DHCP
+    ansible.builtin.raw: |
+      set -e
+      uci set network.brportal=device
+      uci set network.brportal.name='{{ e750_portal_bridge }}'
+      uci set network.brportal.type='bridge'
+      uci set network.portal=interface
+      uci set network.portal.proto='static'
+      uci set network.portal.device='{{ e750_portal_bridge }}'
+      uci set network.portal.ipaddr='{{ e750_portal_ip }}'
+      uci set network.portal.netmask='{{ e750_portal_netmask }}'
+
+      uci set dhcp.portal=dhcp
+      uci set dhcp.portal.interface='portal'
+      uci set dhcp.portal.start='100'
+      uci set dhcp.portal.limit='100'
+      uci set dhcp.portal.leasetime='12h'
+      uci set dhcp.portal.dhcpv4='server'
+
+      uci set firewall.portal=zone
+      uci set firewall.portal.name='portal'
+      uci set firewall.portal.network='portal'
+      uci set firewall.portal.input='ACCEPT'
+      uci set firewall.portal.output='ACCEPT'
+      uci set firewall.portal.forward='REJECT'
+      uci set firewall.portal_wan=forwarding
+      uci set firewall.portal_wan.src='portal'
+      uci set firewall.portal_wan.dest='wan'
+      uci commit network
+      uci commit dhcp
+      uci commit firewall
+      echo "portal ip=$(uci -q get network.portal.ipaddr) bridge={{ e750_portal_bridge }}"
+    changed_when: true
+
+  - name: Add the AP to the portal network
+    ansible.builtin.raw: |
+      set -e
+      uci set wireless.default_radio0.device='radio0'
+      uci set wireless.default_radio0.network='portal'
+      uci set wireless.default_radio0.mode='ap'
+      uci set wireless.default_radio0.ssid='{{ e750_portal_ssid }}'
+      uci set wireless.default_radio0.encryption='none'
+      uci -q delete wireless.default_radio0.key || true
+      uci set wireless.default_radio0.isolate='1'
+      uci set wireless.default_radio0.macaddr='{{ e750_portal_macaddr }}'
+      uci set wireless.default_radio0.disabled='0'
+      uci set wireless.radio0.channel='{{ e750_portal_channel }}'
+      uci set wireless.radio0.beacon_int='{{ e750_portal_beacon_int }}'
+      uci set wireless.radio0.dtim_period='{{ e750_portal_dtim_period }}'
+      uci set wireless.radio0.disabled='0'
+      # Leave wireless.sta (the BSBF uplink) and network.lan/eth0 untouched.
+      uci commit wireless
+      echo "ap.ssid=$(uci -q get wireless.default_radio0.ssid) ap.network=$(uci -q get wireless.default_radio0.network)"
+      echo "sta.ssid=$(uci -q get wireless.sta.ssid) sta.disabled=$(uci -q get wireless.sta.disabled)"
+    changed_when: true
+
+  - name: Arm the watchdog
+    ansible.builtin.raw: |
+      setsid sh -c '
+        sleep {{ e750_portal_watchdog_seconds }}
+        if [ ! -f {{ e750_portal_confirm_file }} ]; then
+          for f in network wireless firewall dhcp nodogsplash uhttpd; do
+            [ -f {{ e750_portal_backup_dir }}/$f ] && cp {{ e750_portal_backup_dir }}/$f /etc/config/$f
+          done
+          logger -t e750-portal "watchdog reverted the portal change"
+          wifi down; sleep 2; wifi up; sleep 8
+          /etc/init.d/network reload
+          /etc/init.d/firewall reload
+        fi
+      ' >/dev/null 2>&1 &
+      echo "watchdog armed for {{ e750_portal_watchdog_seconds }}s"
+    changed_when: true
+
+  - name: Reload and restart wireless
+    ansible.builtin.raw: |
+      /etc/init.d/network reload
+      sleep 6
+      wifi down
+      sleep 2
+      wifi up
+      sleep 10
+      /etc/init.d/firewall reload
+      sleep 2
+      echo reloaded
+    changed_when: true
+    failed_when: false
+
+  - name: Verify the portal and the untouched management link
+    ansible.builtin.raw: |
+      echo "=== br-portal ==="
+      ip -br a show {{ e750_portal_bridge }} 2>&1 || true
+      echo "=== eth0 ==="
+      ip -br a show eth0 2>&1 || true
+      echo "=== wifi ==="
+      iw dev | grep -E 'Interface|addr|ssid|channel' || true
+      echo "=== sta link ==="
+      iw dev phy1-sta0 link 2>/dev/null | grep -E 'Connected|SSID|signal' || true
+      echo "=== hostapd ==="
+      logread | grep -iE 'hostapd' | tail -4 || true
+      echo "=== bsbf ==="
+      bsbf-bonding --status 2>&1 || true
+      ip mp e 2>&1 || true
+    register: _e750_portal_verify
+    changed_when: false
+
+  - name: Show the portal state
+    ansible.builtin.debug:
+      msg:
+        - "{{ _e750_portal_verify.stdout_lines }}"
+        - >-
+          NOT confirmed. Verify the AP and DHCP, then run
+          playbook-e750-portal-confirm.yml. The watchdog reverts in
+          {{ e750_portal_watchdog_seconds }}s otherwise.

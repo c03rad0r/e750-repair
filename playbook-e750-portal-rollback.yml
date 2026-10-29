@@ -1,0 +1,20 @@
+---
+# Restore the pre-change config and remove the portal bridge/AP.
+- name: GL-E750 — roll back the portal change
+  hosts: e750_ssh
+  gather_facts: false
+  vars_files:
+    - roles/e750_portal/defaults/main.yml
+  tasks:
+    - name: Restore the backup
+      ansible.builtin.raw: |
+        set -e
+        for f in network wireless firewall dhcp nodogsplash uhttpd; do
+          [ -f {{ e750_portal_backup_dir }}/$f ] && cp {{ e750_portal_backup_dir }}/$f /etc/config/$f || true
+        done
+        rm -f {{ e750_portal_confirm_file }}
+        wifi down; sleep 2; wifi up; sleep 8
+        /etc/init.d/network reload
+        /etc/init.d/firewall reload
+        echo rolled-back
+      changed_when: true
