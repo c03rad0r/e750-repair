@@ -1,0 +1,13 @@
+---
+# Move the portal AP to the calibrated 2.4 GHz radio (AP+STA on one radio) and
+# disable the uncalibrated 5 GHz AP.
+#
+#   ssh x280 && cd ~/e750-repair
+#   ansible-playbook -i inventory/e750-ssh.yml playbook-e750-portal-radio-2g.yml
+- name: GL-E750 — portal radio on 2.4 GHz
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+  roles:
+    - role: e750_portal_radio

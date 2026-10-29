@@ -62,3 +62,15 @@ Evidence: `evidence/caldata/2026-10-29_skip-otp-boot.txt`.
 - [ ] Decide on persistence (boot script vs U-Boot `bootargs`); current hook is
       installed by the role.
 - [ ] Add ath10k boot hook/radio1 defaults to the image or a first-boot script.
+
+
+## Temporarily disabled (2026-10-30)
+
+The 5 GHz AP was moved off the portal after a real phone associated, got DHCP,
+and was deauthenticated after ~10 s while the radio requested a hardware
+restart. The portal now runs on the calibrated 2.4 GHz radio (AP+STA on `phy1`);
+`radio1` is disabled and the ath10k driver is unloaded. That recovered ~19 MB of
+RAM and CPU idle from 0% to 90%.
+
+The 5 GHz driver and `skip_otp` hook remain installed; re-enable them only for a
+lab test, not for the guest portal.

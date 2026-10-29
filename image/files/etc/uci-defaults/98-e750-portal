@@ -3,25 +3,24 @@
 # and the OLED driver. Non-secret; the STA PSK and BSBF UUID stay external.
 set -e
 
-# 5 GHz portal AP on radio1 (QCA9887, skip_otp); 2.4 GHz stays the STA.
-uci set wireless.radio1=wifi-device
-uci set wireless.radio1.type='mac80211'
-uci set wireless.radio1.path='pci0000:00/0000:00:00.0'
-uci set wireless.radio1.band='5g'
-uci set wireless.radio1.channel='36'
-uci set wireless.radio1.htmode='VHT80'
-uci set wireless.radio1.country='DE'
-uci set wireless.radio1.txpower='10'
-uci set wireless.radio1.disabled='0'
-uci set wireless.default_radio1=wifi-iface
-uci set wireless.default_radio1.device='radio1'
-uci set wireless.default_radio1.network='portal'
-uci set wireless.default_radio1.mode='ap'
-uci set wireless.default_radio1.ssid='TollGate-E750'
-uci set wireless.default_radio1.encryption='none'
-uci set wireless.default_radio1.isolate='1'
-uci set wireless.default_radio1.disabled='0'
-uci set wireless.default_radio0.disabled='1'
+# Portal AP on the calibrated 2.4 GHz radio, sharing it with the STA.
+# The 5 GHz QCA9887 is uncalibrated and unstable with a real phone; keep it off.
+uci set wireless.radio0.disabled='0'
+uci set wireless.radio0.channel='11'
+uci set wireless.radio0.htmode='HT20'
+uci set wireless.radio0.country='DE'
+uci set wireless.radio0.txpower='20'
+uci set wireless.default_radio0=wifi-iface
+uci set wireless.default_radio0.device='radio0'
+uci set wireless.default_radio0.network='portal'
+uci set wireless.default_radio0.mode='ap'
+uci set wireless.default_radio0.ssid='TollGate-E750'
+uci set wireless.default_radio0.encryption='none'
+uci set wireless.default_radio0.isolate='1'
+uci set wireless.default_radio0.macaddr='02:83:c4:4d:fc:3b'
+uci set wireless.default_radio0.disabled='0'
+uci set wireless.radio1.disabled='1'
+uci -q delete wireless.default_radio1 || true
 uci commit wireless
 
 # br-portal at 10.0.0.1, AP only.
@@ -83,7 +82,6 @@ mkdir -p /etc/sysctl.d
 printf 'net.ipv4.tcp_migrate_req=0\nnet.ipv4.tcp_syncookies=1\n' > /etc/sysctl.d/99-cve-2026-98432.conf
 
 # Services and cron.
-/etc/init.d/ath10k-skip-otp enable
 /etc/init.d/e750-portal-tproxy enable
 touch /etc/crontabs/root
 grep -q e750-link-mode /etc/crontabs/root || \
