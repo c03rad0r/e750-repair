@@ -1,0 +1,18 @@
+---
+# Create br-portal + the AP-only captive-portal network. eth0 (management) and
+# the STA/BSBF uplink are left alone. Run from x280:
+#
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-portal.yml
+#
+# Confirm with playbook-e750-portal-confirm.yml; otherwise the watchdog reverts.
+
+- name: GL-E750 — portal bridge + AP-only
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Apply the portal role
+      ansible.builtin.include_role:
+        name: e750_portal

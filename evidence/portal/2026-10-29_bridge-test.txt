@@ -1,0 +1,29 @@
+# E750 separate portal bridge — live test 2026-10-29
+
+## applied
+- roles/e750_portal + playbook-e750-portal.yml
+- br-portal 10.0.0.1/24, AP-only (phy1-ap0, SSID TollGate-E750, ch11, MAC 02:83:c4:4d:fc:3b)
+- eth0 stayed 192.168.8.1/24 (management)
+- STA phy1-sta0 stayed connected to hermes-lan; BSBF endpoints intact
+- watchdog 900 s armed; confirmed after verification
+
+## result
+- br-portal UP 10.0.0.1; eth0 UP 192.168.8.1; phy1-ap0 UP; phy1-sta0 connected
+- AP visible in a client scan (SSID TollGate-E750, ch11)
+- dnsmasq listening on :67; dhcp.portal configured
+- firewall portal zone + br-portal rules present
+- BSBF enabled, endpoints phy1-sta0 + wwan0, health RESULT OK
+- TollGate v0.6.0 started and reported config_ok/network_ok/wallet_ok; mint probes succeeded; AP/STA stayed up (unlike the br-lan attempt)
+- portal SPA at http://10.0.0.1:2051/splash.html returned 200
+- nodogsplash on :2050 returned 500 and reported 'Managed IP range 0.0.0.0/0'; adding gatewayip/gatewaymask did not fix it
+- no independent client association/DHCP test was possible (the controller WiFi adapter is managed and drops the test vif)
+
+## rollback
+- because the open AP + portal->wan forwarding without working enforcement would be an open gateway, rolled back
+- playbook-e750-portal-rollback.yml restored the pre-portal config; tollgate-wrt/nodogsplash stopped/disabled
+- final: eth0 192.168.8.1, AP disabled, no br-portal, BSBF enabled, health RESULT OK
+
+## next
+- fix the nodogsplash splash/Managed-IP-range issue (or use a minimal redirect page)
+- test association/DHCP/splash from a phone or a dedicated client
+- re-apply the portal role; then decide standalone vs combined.

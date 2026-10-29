@@ -1,0 +1,13 @@
+---
+# Confirm the portal change and disarm the watchdog.
+- name: GL-E750 — confirm the portal change
+  hosts: e750_ssh
+  gather_facts: false
+  vars_files:
+    - roles/e750_portal/defaults/main.yml
+  tasks:
+    - name: Write the confirm flag
+      ansible.builtin.raw: |
+        touch {{ e750_portal_confirm_file }}
+        ls -l {{ e750_portal_confirm_file }}
+      changed_when: true
