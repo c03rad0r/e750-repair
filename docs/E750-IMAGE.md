@@ -109,6 +109,10 @@ Do **not** flash until the serial adapter is reliable. When it is:
 
 ## Not included yet
 
+- The 5 GHz `ath10k-skip-otp` boot hook and `radio1`/`default_radio1` config are
+  applied by `roles/e750_radio5g` at runtime, not baked into this image yet.
+  Flashing the image alone will not enable the 5 GHz portal AP.
+
 - `gl-e750-mcu` / OLED support (Phase 6). Add it to the image once it compiles
   for 25.12/mips_24kc and the MCU protocol is confirmed.
 - TollGate (Phase 8) — decide whether it belongs on this image or a separate

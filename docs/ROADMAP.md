@@ -9,18 +9,19 @@ Tracker: [`E750-REMEDIATION.md`](E750-REMEDIATION.md) and
 
 ```text
 eth0       192.168.8.1/24   management LAN
-br-portal  10.0.0.1/24      phy1-ap0 (TollGate-E750, ch11)
-phy1-sta0  hermes-lan       BSBF primary
+br-portal  10.0.0.1/24      phy2-ap0 (TollGate-E750, 5 GHz ch36/VHT80)
+phy1-sta0  hermes-lan       2.4 GHz STA/BSBF primary
+2.4 GHz AP disabled         airtime reserved for the backhaul
 wwan0      Aldi Talk 4G     BSBF backup
 BSBF       enabled, tproxy bypass for br-portal, egress 23.182.128.219
 TollGate   v0.6.0 daemon + nodogsplash + portal uhttpd :2051
 health     RESULT OK
-soak       24 h combined soak from 2026-10-29T14:24:30Z (first sample rc=0)
+soak       24 h combined soak from 2026-10-29T17:09:40Z (first sample rc=0)
 ```
 
 Verified: pre-auth splash/portal 200 and internet blocked; `ndsctl auth`;
 post-auth ping + HTTP 301; cold boot re-applies the BSBF bypass and starts the
-portal services. 86 contract tests pass.
+portal services. 103 contract tests pass.
 
 ## Completed milestones
 
@@ -65,7 +66,8 @@ portal services. 86 contract tests pass.
       STA/BSBF backhaul; cold boot verified, health OK. No per-device
       calibration; txpower 10 dBm. See [`E750-RADIO5G.md`](E750-RADIO5G.md)
       and [`QCA9887-SKIP-OTP.md`](QCA9887-SKIP-OTP.md).
-- [ ] Real 5 GHz client: association, DHCP, splash, payment, post-auth.
+- [ ] Real 5 GHz client: association, DHCP, splash, payment, post-auth
+      (a veth client on `br-portal` already passes splash/portal/auth/HTTP 301).
 - [ ] Try `cal-pci` + `skip_otp` for calibration/stability; add the boot hook
       and radio1 defaults to the image.
 - [ ] Decide whether the 5 GHz repair is still required now that the combined
@@ -84,8 +86,9 @@ portal services. 86 contract tests pass.
       output) and move the STA PSK/BSBF UUID to OpenBao; remove plaintext UCI.
 - [ ] **Image integration**: `tollgate-wrt` is not in the official OpenWrt
       feed. Decide on the pinned FreedomTechFeed bundle/custom feed; if adopted,
-      bake the portal/TollGate packages + `br-portal`/nodogsplash defaults into
-      the image and rebuild. Do not flash before the serial fix.
+      bake the portal/TollGate packages + `br-portal`/nodogsplash defaults and
+      the 5 GHz `ath10k-skip-otp` hook into the image and rebuild. Do not flash
+      before a proven serial/checksum path.
 - [ ] **TollGate standalone vs combined**: combined works; document whether a
       standalone 4G/STA portal is still a required mode.
 

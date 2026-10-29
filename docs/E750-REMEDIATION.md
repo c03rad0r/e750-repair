@@ -1,10 +1,11 @@
 # GL-E750 remediation + BSBF IaC — plan and tracker
 
-Status: **code complete; physical/decision items remain.** PRs #1–#13 are merged
-on `main` at `c471cbc`. The cal-only experiment was negative and reverted; 4G RF
-is healthy but plan-throttled; the serial adapter `BH00DL3M` is bad; the 24 h
-soak started `2026-10-29T10:15:23Z`. Next P0 is the physical serial
-swap/reflow; the 5 GHz lead is board-ID/EEPROM/OTP.
+Status: **5 GHz portal AP + BSBF/TollGate combined working; remaining items are
+hardware/decision-gated.** PRs #1–#31 are merged on `main` at `3bff0a5`. The
+QCA9887 now runs as an uncalibrated 5 GHz portal AP via `skip_otp=1`; the 2.4
+GHz radio is the STA/BSBF backhaul. Serial has a checksummed exec channel (raw
+link 96/100). A clean 24 h soak started `2026-10-29T17:09:40Z`. Remaining:
+real 5 GHz client/payment, calibration/OTP, EU server, 4G plan, image.
 
 ## Execution log
 
@@ -32,8 +33,10 @@ physical steps (cable, SIM, antenna) and emergency recovery.
 ## Current live state (verified 2026-10-29)
 
 - E750: OpenWrt **25.12.5**, kernel **6.12.94**, board `glinet,gl-e750`.
-- Radios: **2.4 GHz only**. 5 GHz QCA9887 is absent; dmesg is the
-  **pre-install signature** (`-22`, `otp calibration failed: 2`, **no `-122`**).
+- Radios: **5 GHz portal AP + 2.4 GHz STA**. The QCA9887 initializes with
+  `skip_otp=1` (no per-device calibration); `phy2-ap0` is the 5 GHz portal AP on
+  `br-portal` 10.0.0.1. The 2.4 GHz AP is disabled; `phy1-sta0` is the BSBF
+  uplink. A normal boot without `skip_otp` still shows the `-22` OTP failure.
 - Firmware dir: `QCA9887/hw1.0/` has only `board.bin` + `firmware-2.bin`;
   no `cal-pci` / `pre-cal` files. The cal-only experiment was run and reverted;
   see `docs/CALDATA-CAL-ONLY.md`.
@@ -239,7 +242,7 @@ handler that would recreate both.
 - [x] Decision (revised): **standalone TollGate is a go** on 2.4 GHz AP+STA
       (`phy1-ap0` + `phy1-sta0`, `br-lan` with `eth0`, portal on the AP, STA as
       WAN). **Simultaneous BSBF + TollGate is conditional** on the zone/tproxy
-      and test matrix. The dead 5 GHz radio is not a blocker for AP+STA.
+      and test matrix. The 5 GHz radio is now available for the portal.
 - [x] `docs/E750-TOLLGATE.md` + evidence
       `evidence/tollgate/2026-10-29_asset-check.txt`. PR #12 merged; wording
       corrected in PR #16.
@@ -268,8 +271,9 @@ handler that would recreate both.
       `evidence/portal/2026-10-29_combined-bypass.txt` and
       `..._cold-boot-combined.txt`.
 - [x] Clean 24 h combined soak started `2026-10-29T14:24:30Z`; complete it.
-- [ ] Two-radio/5 GHz remains the long-term headroom fix; not a prerequisite
-      for the current combined mode.
+- [x] 5 GHz portal AP works with `skip_otp=1` (PR #31); 2.4 GHz is the
+      STA/BSBF backhaul. Calibration/OTP and a real 5 GHz client/payment test
+      remain.
 
 ## Phase 9 — monitoring, acceptance, and final merge
 
@@ -320,7 +324,8 @@ handler that would recreate both.
   merge; `c03rad0r` is pull-only.
 - **Serial:** the current FTDI clone corrupts TX; replace before relying on
   serial for the radio experiments.
-- **5 GHz:** cause unproven; cal-only may fail; keep the art/firmware backups.
+- **5 GHz:** `skip_otp=1` works but is uncalibrated; keep txpower low and the
+  art/firmware backups. Production use needs calibration/OTP validation.
 - **4G:** ~0.5 Mbps, likely throttled/weak; physical plan/antenna work.
 - **Server:** Houston adds ~160–170 ms; a European VPS is preferred.
 - **Nested OMR:** `hermes-lan` is behind the MT6000 OMR tunnel; use an
