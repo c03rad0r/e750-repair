@@ -55,6 +55,36 @@ Settings tested on the E750 adapter:
    `serial-wake.py` and then the normal serial transport. The repo's
    `connection_plugins/serial_console.py` still retries corrupted commands.
 
+## Loopback / cold-joint test
+
+A cold solder joint on TX, RX, GND, or the Dupont/header pin is plausible. Prove
+it with a loopback before reflowing:
+
+1. Unplug the adapter/cable from the E750.
+2. Short the adapter/cable **TX and RX** pins (leave GND connected normally; do
+   not connect VCC).
+3. Run:
+
+   ```bash
+   ssh x280 'python3 ~/e750-repair/scripts/serial-tx-test.py /dev/ttyE750 --loopback --count 10'
+   ```
+
+   `--loopback` sends a 95-byte printable pattern and compares the exact bytes;
+   it does not need a shell. `summary loopback_clean=10/10` means the adapter and
+   cable are good. Any corrupt/mismatched bytes means the adapter/cable/connector
+   is bad (cold joint, bad crimp, or level problem).
+
+4. Continuity with the power off: TX→RX (at the E750 end, after the adapter),
+   GND→GND, and each wire end-to-end should be <1 Ω and stable while wiggling
+   the connector. A jump = cold/intermittent joint.
+5. Visual/reflow: inspect the FTDI header and the E750 UART pads; reflow TX/GND
+   with flux; replace Dupont wires with short soldered leads; verify the
+   adapter is set to **3.3 V** (the E750 UART is 3.3 V, not 5 V).
+
+If loopback is clean but the E750 still corrupts, the E750-end RX pad/level or
+the UART is the problem. If loopback is corrupt, replace/reflow the adapter or
+cable; a known-good `BG046H5F` swap is the fastest confirmation.
+
 ## Software tools
 
 ```bash
@@ -68,7 +98,8 @@ ssh x280 'python3 ~/e750-repair/scripts/serial-wake.py /dev/ttyE750 "id"'
 
 `serial-tx-test.py` counts a command as clean only when the nonce appears twice
 (console echo + command output), so a corrupted command that only echoes the
-nonce is not a false pass.
+nonce is not a false pass. Its `--loopback` mode compares raw bytes when TX/RX
+are shorted at the adapter/cable end.
 
 Software retries cannot fix a line that corrupts every CR/command. The E750
 console itself is fine (the prompt appears; RX is clean); the host -> E750 TX is

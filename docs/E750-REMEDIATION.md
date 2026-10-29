@@ -125,7 +125,10 @@ handler that would recreate both.
       `id` works. `askfirst` needs a valid CR; the E750 prompt appears but
       commands corrupt. `latency_timer` 16→1 and `power/control=on` do not fix it.
 - [x] Add `scripts/serial-tx-test.py`, `scripts/serial-wake.py`,
-      `docs/SERIAL-RELIABILITY.md`, and evidence. PR #6.
+      `docs/SERIAL-RELIABILITY.md`, and evidence. PR #6 merged `9b54cd5`.
+- [x] Add `serial-tx-test.py --loopback` plus the continuity/wiggle/reflow and
+      cold-solder-joint runbook. PR #8 (loopback needs the physical TX/RX short;
+      no hardware was moved).
 - [ ] **Swap the E750 adapter/cable** to the known-good `BG046H5F` first, then
       replace with a genuine 3.3 V FTDI or CP2102; re-run
       `serial-tx-test.py` (expect 5/5) and `serial-wake.py id`. (physical,
