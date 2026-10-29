@@ -1,0 +1,11 @@
+---
+# CVE-2026-98432: use-after-free of IPv4 TCP IP options in the handshake.
+#
+# The bug is in plain IPv4 TCP (tcp_v4_syn_recv_sock / ip_options_build); the
+# public exploit used an MPTCP listener. There is no workaround other than a
+# patched kernel, so this role pins a patched kernel and removes the two
+# optional attack-surface knobs we control.
+bonding_hardening_pin_kernel: true
+bonding_hardening_sysctl_file: /etc/sysctl.d/99-cve-2026-98432.conf
+bonding_hardening_fixed_6_12: "6.12.113"
+bonding_hardening_fixed_6_18: "6.18.56"

@@ -45,6 +45,18 @@ portal services. 103 contract tests pass.
 
 ## Remaining work
 
+### P0 — security: CVE-2026-98432
+
+- [x] Bonding-server host patched: booted Debian `6.12.113+deb13-arm64` and
+      pinned GRUB (OMR kernel `6.18.41` is unpatched until OMR ships 6.18.56).
+      Reproducible via `playbook-bonding-servers-hardening.yml`.
+- [x] `net.ipv4.tcp_migrate_req=0` + `tcp_syncookies=1` on the host, E750 and
+      MT6000; WAN zones are `input=REJECT`; neither router has a public MPTCP
+      listener.
+- [ ] E750: flash an image with kernel `6.12.113+` when OpenWrt ships it.
+- [ ] MT6000: OMR kernel `6.18.56+`.
+- See [`CVE-2026-98432.md`](CVE-2026-98432.md).
+
 ### P0 — physical / recovery (needs input)
 
 - [x] **Serial cable re-soldered** (2026-10-29): raw reliability improved from

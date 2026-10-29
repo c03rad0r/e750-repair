@@ -1,0 +1,46 @@
+---
+- name: Write the CVE-2026-98432 sysctls
+  ansible.builtin.copy:
+    dest: "{{ bonding_hardening_sysctl_file }}"
+    mode: "0644"
+    content: |
+      # CVE-2026-98432: disable request-socket migration and keep syncookies.
+      net.ipv4.tcp_migrate_req=0
+      net.ipv4.tcp_syncookies=1
+  notify: Apply the hardening sysctls
+
+- name: Read the running kernel
+  ansible.builtin.command: uname -r
+  register: _hard_kernel
+  changed_when: false
+
+- name: Read the default GRUB entry
+  ansible.builtin.command: grep '^GRUB_DEFAULT=' /etc/default/grub
+  register: _hard_grub
+  changed_when: false
+  failed_when: false
+
+- name: Find the newest patched Debian kernel
+  ansible.builtin.shell: ls -1 /boot/vmlinuz-*+deb13-* 2>/dev/null | sort -V | tail -1
+  register: _hard_debk
+  changed_when: false
+
+- name: Pin the patched Debian kernel when OMR is the default
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_DEFAULT='
+    line: >-
+      GRUB_DEFAULT="Advanced options for Debian GNU/Linux>Debian GNU/Linux,
+      with Linux {{ _hard_debk.stdout | basename | regex_replace('^vmlinuz-', '') }}"
+  when:
+    - bonding_hardening_pin_kernel | bool
+    - _hard_debk.stdout | length > 0
+    - not (_hard_debk.stdout | basename | regex_replace('^vmlinuz-', '') in _hard_grub.stdout)
+  notify: Regenerate grub
+
+- name: Report the kernel state
+  ansible.builtin.debug:
+    msg:
+      - "running: {{ _hard_kernel.stdout }}"
+      - "grub default: {{ _hard_grub.stdout | default('n/a') }}"
+      - "patched deb13 kernel: {{ _hard_debk.stdout | default('none') }}"
