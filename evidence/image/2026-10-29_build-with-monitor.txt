@@ -1,0 +1,25 @@
+# E750 clean image build with the monitor — 2026-10-29T10:23:49Z
+
+## artifact
+9ea82c93fcc286a154fd877e0ef42fc65af07064f445dab9ec028952a2247dad  image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/bin/targets/ath79/nand/openwrt-25.12.5-ath79-nand-glinet_gl-e750-squashfs-sysupgrade.bin
+-rw-rw-r-- 1 c08rad0r c08rad0r 16619792 Oct 29 11:23 image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/bin/targets/ath79/nand/openwrt-25.12.5-ath79-nand-glinet_gl-e750-squashfs-sysupgrade.bin
+
+## baked operational files
+-rw------- 1 c08rad0r c08rad0r   41 Jun 29 14:59 image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/etc/crontabs/root
+-rw------- 1 c08rad0r c08rad0r  204 Jun 29 14:59 image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/etc/dropbear/authorized_keys
+-rwxrwxr-x 1 c08rad0r c08rad0r 2170 Jun 29 14:59 image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/etc/uci-defaults/99-e750-defaults
+-rwxr-xr-x 1 c08rad0r c08rad0r 2316 Jun 29 14:59 image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/usr/bin/e750-health
+-rwxr-xr-x 1 c08rad0r c08rad0r 1017 Jun 29 14:59 image/build/openwrt-imagebuilder-25.12.5-ath79-nand.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/usr/bin/e750-health-cron.sh
+
+## crontab
+*/5 * * * * /usr/bin/e750-health-cron.sh
+
+## script heads
+#!/bin/sh
+#!/bin/sh
+
+## cron service in image
+lrwxrwxrwx 1 c08rad0r c08rad0r 14 Jun 29 14:59 S50cron -> ../init.d/cron
+
+## packages
+188

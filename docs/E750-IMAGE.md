@@ -24,7 +24,12 @@ recovery path.
   AP disabled, key-only Dropbear, hostname/timezone. **No PSK or BSBF UUID.**
 - `image/files/etc/dropbear/authorized_keys` — the current two **public**
   operator keys (x280 + T14). No private key.
-- `image/build.sh` — pins the ImageBuilder tarball SHA256 and builds the image.
+- `image/files/etc/crontabs/root` — `*/5 * * * * /usr/bin/e750-health-cron.sh`.
+- `image/build.sh` — pins the ImageBuilder tarball SHA256, stages
+  `scripts/e750-health.sh` → `/usr/bin/e750-health` and
+  `scripts/e750-health-cron.sh` → `/usr/bin/e750-health-cron.sh`, builds the
+  image, and **fails the build** if the monitor, crontab, uci-defaults, or
+  operator keys are missing from the rootfs.
 
 ## Build
 
@@ -39,14 +44,24 @@ gitignored.
 
 ## Build result (2026-10-29)
 
-Built successfully on T14 with the pinned ImageBuilder:
+Final artifact, built on T14 with the pinned ImageBuilder **including the health
+monitor**:
 
 ```text
 openwrt-25.12.5-ath79-nand-glinet_gl-e750-squashfs-sysupgrade.bin
-size   16609552 bytes
-sha256 5a6fee118fb7876564007481e51da372556593968c83520b37bfd1939a977689
+size   16619792 bytes
+sha256 9ea82c93fcc286a154fd877e0ef42fc65af07064f445dab9ec028952a2247dad
 packages 188
 ```
+
+Verified in the built rootfs: `/usr/bin/e750-health` (2316 B),
+`/usr/bin/e750-health-cron.sh` (1017 B), `/etc/crontabs/root` (0600),
+`/etc/uci-defaults/99-e750-defaults` (executable), the two public Dropbear keys,
+and the `S50cron` rc.d symlink. Evidence:
+`evidence/image/2026-10-29_build-with-monitor.txt`.
+
+> The first build in PR #9 (sha256 `5a6fee11…`, 16609552 bytes) did **not**
+> include the monitor; it predates PR #10. The artifact above supersedes it.
 
 The package versions in the image match the live device (checked with
 `apk list --installed`): `bsbf-* 2026.08.29~60f0d20f-r1`, `xray-core 26.3.27-r1`,
@@ -73,7 +88,10 @@ LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-bsbf-client.y
 ```
 
 The image is key-only and carries the current operator public keys, so x280 and
-T14 (via `-J x280`) can log in once the LAN is up.
+T14 (via `-J x280`) can log in once the LAN is up. The health monitor is baked
+in: `/etc/crontabs/root` schedules it every 5 minutes and
+`99-e750-defaults` enables/starts cron; `/tmp/e750-health.log` appears after the
+first tick.
 
 ## Flash (gated)
 
@@ -90,6 +108,6 @@ Do **not** flash until the serial adapter is reliable. When it is:
 ## Not included yet
 
 - `gl-e750-mcu` / OLED support (Phase 6). Add it to the image once it compiles
-  for 25.12/mips_24kc.
+  for 25.12/mips_24kc and the MCU protocol is confirmed.
 - TollGate (Phase 8) — decide whether it belongs on this image or a separate
   one; do not combine it with the live BSBF path without a test plan.
