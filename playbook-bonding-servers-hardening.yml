@@ -1,0 +1,16 @@
+---
+# CVE-2026-98432 mitigations for the bonding-server host.
+#
+#   ansible-playbook -i inventory/bsbf-servers.yml playbook-bonding-servers-hardening.yml
+#
+# The only complete fix is a patched kernel. On the OMR host the patched
+# Debian kernel is installed next to the unpatched OMR kernel, so this pins
+# GRUB to the Debian one and applies the two attack-surface sysctls.
+
+- name: CVE-2026-98432 hardening
+  hosts: bsbf_container_hosts
+  gather_facts: false
+  become: true
+  any_errors_fatal: true
+  roles:
+    - role: bonding_hardening
