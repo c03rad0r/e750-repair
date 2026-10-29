@@ -1,0 +1,11 @@
+---
+# Scheduled health monitoring for the E750. Cron runs every 5 minutes and logs
+# one compact line; failures also go to syslog. The log is volatile (/tmp) so
+# flash wear is not a concern; a 24 h soak only needs the current boot.
+e750_monitor_interval: "*/5 * * * *"
+e750_monitor_health_src: "{{ playbook_dir }}/scripts/e750-health.sh"
+e750_monitor_cron_src: "{{ playbook_dir }}/scripts/e750-health-cron.sh"
+e750_monitor_health_bin: "/usr/bin/e750-health"
+e750_monitor_cron_bin: "/usr/bin/e750-health-cron.sh"
+e750_monitor_log: "/tmp/e750-health.log"
+e750_monitor_crontab: "/etc/crontabs/root"

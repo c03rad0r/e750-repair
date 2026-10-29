@@ -1,0 +1,54 @@
+---
+# Install the health scripts and a 5-minute cron job on the E750. Raw only: the
+# target has no Python. Scripts are transferred with a quoted heredoc so shell
+# metacharacters and quoting in the scripts are preserved exactly.
+
+- name: Install the health check script
+  ansible.builtin.raw: |
+    set -e
+    cat > {{ e750_monitor_health_bin }} <<'E750_HEALTH_SCRIPT_EOF'
+    {{ lookup('file', e750_monitor_health_src) }}
+    E750_HEALTH_SCRIPT_EOF
+    chmod 755 {{ e750_monitor_health_bin }}
+    test -s {{ e750_monitor_health_bin }}
+    head -1 {{ e750_monitor_health_bin }}
+  changed_when: true
+
+- name: Install the cron wrapper
+  ansible.builtin.raw: |
+    set -e
+    cat > {{ e750_monitor_cron_bin }} <<'E750_HEALTH_CRON_EOF'
+    {{ lookup('file', e750_monitor_cron_src) }}
+    E750_HEALTH_CRON_EOF
+    chmod 755 {{ e750_monitor_cron_bin }}
+    test -s {{ e750_monitor_cron_bin }}
+    head -1 {{ e750_monitor_cron_bin }}
+  changed_when: true
+
+- name: Install the cron entry once
+  ansible.builtin.raw: |
+    set -e
+    touch {{ e750_monitor_crontab }}
+    grep -q '{{ e750_monitor_cron_bin }}' {{ e750_monitor_crontab }} || \
+      echo '{{ e750_monitor_interval }} {{ e750_monitor_cron_bin }}' >> {{ e750_monitor_crontab }}
+    chmod 600 {{ e750_monitor_crontab }}
+    cat {{ e750_monitor_crontab }}
+  changed_when: true
+
+- name: Enable and restart cron
+  ansible.builtin.raw: |
+    /etc/init.d/cron enable
+    /etc/init.d/cron restart
+    sleep 1
+    ps w | grep '[c]rond' || true
+  changed_when: true
+
+- name: Run one sample now
+  ansible.builtin.raw: "{{ e750_monitor_cron_bin }}; echo rc=$?; tail -5 {{ e750_monitor_log }}"
+  register: _e750_monitor_sample
+  changed_when: false
+  failed_when: false
+
+- name: Show the sample
+  ansible.builtin.debug:
+    msg: "{{ _e750_monitor_sample.stdout_lines }}"
