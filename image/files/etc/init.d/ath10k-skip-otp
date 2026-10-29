@@ -1,0 +1,12 @@
+#!/bin/sh /etc/rc.common
+# Load ath10k with skip_otp=1 before wifi starts. The QCA9887 OTP read fails
+# with -22 on this unit; skipping OTP lets the radio initialize uncalibrated.
+START=19
+
+boot() {
+	K=$(uname -r)
+	rmmod ath10k_pci 2>/dev/null || true
+	rmmod ath10k_core 2>/dev/null || true
+	insmod /lib/modules/$K/ath10k_core.ko skip_otp=1 2>/dev/null || true
+	insmod /lib/modules/$K/ath10k_pci.ko 2>/dev/null || true
+}

@@ -4,7 +4,7 @@ Scope: the six follow-ups from the bonding/portal review.
 
 - [x] 1. Automatic standby/aggregate controller (installed; observe-only)
 - [x] 2. Portal branding ("bonded gateway")
-- [ ] 3. Bake the runtime pieces into the image
+- [x] 3. Bake the runtime pieces into the image (except tollgate-wrt, external feed)
 - [x] 4. Wire the serial checksum into Ansible (plugin + docs) — see commit
       `004cfea` on `pr/fleet-e750-batch`; end-to-end run blocked by the dead console
 - [x] 5. Art-blob calibration experiment — negative; OTP is required, documented

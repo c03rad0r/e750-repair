@@ -107,11 +107,34 @@ Do **not** flash until the serial adapter is reliable. When it is:
 4. Verify LAN 192.168.8.1, 4G, key-only SSH, then run the BSBF client role.
 5. Rollback: previous sysupgrade image + config backup via serial.
 
-## Not included yet
+## Baked in since 2026-10-30
 
-- The 5 GHz `ath10k-skip-otp` boot hook and `radio1`/`default_radio1` config are
-  applied by `roles/e750_radio5g` at runtime, not baked into this image yet.
-  Flashing the image alone will not enable the 5 GHz portal AP.
+- 5 GHz portal AP: `ath10k-skip-otp` init hook, `radio1`/`default_radio1` on
+  `portal`, 2.4 GHz AP disabled.
+- `br-portal` 10.0.0.1, DHCP, firewall portal zone, nodogsplash and the portal
+  uhttpd configuration.
+- Portal-over-bond tproxy (`e750-portal-tproxy.sh` + `e750-portal-tproxy` init),
+  the CVE-2026-98432 sysctls, and the link-mode + OLED cron entries.
+- `e750-path-metrics.sh`, `e750-link-mode.sh`, `e750-mcu-oled.sh`,
+  `astro`/`nodogsplash` packages, and `e750_linkmode` config.
+
+Artifact:
+
+```text
+openwrt-25.12.5-ath79-nand-glinet_gl-e750-squashfs-sysupgrade.bin
+size    16,906,512 bytes
+sha256  5bf20172e6a0bba53d1fdc661719b74351500c6479ea6a7e4b708b6ead5002c4
+packages 211
+```
+
+`tollgate-wrt` is the one runtime package not baked in: it is not in the
+official OpenWrt feed. Add the pinned FreedomTechFeed as an ImageBuilder feed
+(or install the pinned offline bundle at first boot) before calling the image
+feature-complete. The portal uci-defaults is written defensively, so its absence
+does not break the image.
+
+> Not flashed: the serial console is dead (0/5, no bytes), so the flash and
+> recovery path is still blocked.
 
 - `gl-e750-mcu` / OLED support (Phase 6). Add it to the image once it compiles
   for 25.12/mips_24kc and the MCU protocol is confirmed.

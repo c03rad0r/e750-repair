@@ -32,6 +32,10 @@ mkdir -p "$STAGE"
 cp -a "${ROOT}/image/files/." "$STAGE/"
 install -D -m 755 "${ROOT}/scripts/e750-health.sh" "$STAGE/usr/bin/e750-health"
 install -D -m 755 "${ROOT}/scripts/e750-health-cron.sh" "$STAGE/usr/bin/e750-health-cron.sh"
+install -D -m 755 "${ROOT}/scripts/e750-path-metrics.sh" "$STAGE/usr/bin/e750-path-metrics.sh"
+install -D -m 755 "${ROOT}/scripts/e750-link-mode.sh" "$STAGE/usr/bin/e750-link-mode.sh"
+install -D -m 755 "${ROOT}/scripts/e750-mcu-oled.sh" "$STAGE/usr/bin/e750-mcu-oled.sh"
+install -D -m 755 "${ROOT}/roles/bsbf/files/portal-tproxy.sh" "$STAGE/usr/bin/e750-portal-tproxy.sh"
 chmod 600 "$STAGE/etc/crontabs/root"
 
 echo "profile=${PROFILE}"
@@ -45,7 +49,10 @@ make -j"$(nproc)" image \
 
 # Fail the build if the operational files were not actually baked in.
 for f in usr/bin/e750-health usr/bin/e750-health-cron.sh \
-	etc/crontabs/root etc/uci-defaults/99-e750-defaults \
+	usr/bin/e750-path-metrics.sh usr/bin/e750-link-mode.sh \
+	usr/bin/e750-mcu-oled.sh usr/bin/e750-portal-tproxy.sh \
+	etc/init.d/ath10k-skip-otp etc/uci-defaults/98-e750-portal \
+	etc/uci-defaults/99-e750-defaults etc/crontabs/root \
 	etc/dropbear/authorized_keys; do
 	if ! find build_dir -type f -path "*/root-ath79/$f" | grep -q .; then
 		echo "ERROR: $f missing from the built rootfs" >&2

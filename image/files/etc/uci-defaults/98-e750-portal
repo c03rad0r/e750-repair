@@ -1,0 +1,95 @@
+#!/bin/sh
+# First-boot portal runtime: 5 GHz AP, br-portal, portal-over-bond, link mode
+# and the OLED driver. Non-secret; the STA PSK and BSBF UUID stay external.
+set -e
+
+# 5 GHz portal AP on radio1 (QCA9887, skip_otp); 2.4 GHz stays the STA.
+uci set wireless.radio1=wifi-device
+uci set wireless.radio1.type='mac80211'
+uci set wireless.radio1.path='pci0000:00/0000:00:00.0'
+uci set wireless.radio1.band='5g'
+uci set wireless.radio1.channel='36'
+uci set wireless.radio1.htmode='VHT80'
+uci set wireless.radio1.country='DE'
+uci set wireless.radio1.txpower='10'
+uci set wireless.radio1.disabled='0'
+uci set wireless.default_radio1=wifi-iface
+uci set wireless.default_radio1.device='radio1'
+uci set wireless.default_radio1.network='portal'
+uci set wireless.default_radio1.mode='ap'
+uci set wireless.default_radio1.ssid='TollGate-E750'
+uci set wireless.default_radio1.encryption='none'
+uci set wireless.default_radio1.isolate='1'
+uci set wireless.default_radio1.disabled='0'
+uci set wireless.default_radio0.disabled='1'
+uci commit wireless
+
+# br-portal at 10.0.0.1, AP only.
+uci set network.brportal=device
+uci set network.brportal.name='br-portal'
+uci set network.brportal.type='bridge'
+uci set network.portal=interface
+uci set network.portal.proto='static'
+uci set network.portal.device='br-portal'
+uci set network.portal.ipaddr='10.0.0.1'
+uci set network.portal.netmask='255.255.255.0'
+uci commit network
+
+uci set dhcp.portal=dhcp
+uci set dhcp.portal.interface='portal'
+uci set dhcp.portal.start='100'
+uci set dhcp.portal.limit='100'
+uci set dhcp.portal.leasetime='12h'
+uci commit dhcp
+
+uci set firewall.portal=zone
+uci set firewall.portal.name='portal'
+uci set firewall.portal.network='portal'
+uci set firewall.portal.input='REJECT'
+uci set firewall.portal.output='ACCEPT'
+uci set firewall.portal.forward='REJECT'
+uci set firewall.portal_wan=forwarding
+uci set firewall.portal_wan.src='portal'
+uci set firewall.portal_wan.dest='wan'
+uci commit firewall
+
+# nodogsplash + portal uhttpd (if the packages are present).
+if [ -x /etc/init.d/nodogsplash ]; then
+	uci set nodogsplash.@nodogsplash[0].gatewayinterface='br-portal'
+	uci set nodogsplash.@nodogsplash[0].gatewayiprange='10.0.0.0/24'
+	uci set nodogsplash.@nodogsplash[0].gatewayaddress='10.0.0.1'
+	uci set nodogsplash.@nodogsplash[0].gatewayname='TollGate-E750 · Bonded'
+	uci set nodogsplash.@nodogsplash[0].webroot='/etc/nodogsplash/htdocs'
+	uci set nodogsplash.@nodogsplash[0].splashpage='splash.html'
+	uci -q delete nodogsplash.@nodogsplash[0].authenticated_users || true
+	uci add_list nodogsplash.@nodogsplash[0].authenticated_users='allow to 0.0.0.0/0'
+	uci commit nodogsplash
+	/etc/init.d/nodogsplash enable
+fi
+if [ -d /etc/tollgate/tollgate-captive-portal-site ]; then
+	uci set uhttpd.portal=uhttpd
+	uci -q delete uhttpd.portal.listen_http || true
+	uci set uhttpd.portal.listen_http='0.0.0.0:2051'
+	uci add_list uhttpd.portal.listen_http='[::]:2051'
+	uci set uhttpd.portal.home='/etc/tollgate/tollgate-captive-portal-site'
+	uci set uhttpd.portal.rfc1918_filter='0'
+	uci set uhttpd.portal.no_dirlists='1'
+	uci commit uhttpd
+	/etc/init.d/uhttpd enable
+fi
+
+# CVE-2026-98432 attack-surface knobs.
+mkdir -p /etc/sysctl.d
+printf 'net.ipv4.tcp_migrate_req=0\nnet.ipv4.tcp_syncookies=1\n' > /etc/sysctl.d/99-cve-2026-98432.conf
+
+# Services and cron.
+/etc/init.d/ath10k-skip-otp enable
+/etc/init.d/e750-portal-tproxy enable
+touch /etc/crontabs/root
+grep -q e750-link-mode /etc/crontabs/root || \
+	echo '* * * * * /usr/bin/e750-link-mode.sh tick >/dev/null 2>&1' >> /etc/crontabs/root
+grep -q e750-mcu-oled /etc/crontabs/root || \
+	echo '* * * * * /usr/bin/e750-mcu-oled.sh >/dev/null 2>&1' >> /etc/crontabs/root
+/etc/init.d/cron enable
+
+exit 0
