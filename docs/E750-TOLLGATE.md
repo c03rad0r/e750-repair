@@ -1,9 +1,10 @@
 # TollGate on the E750 — evaluation
 
-Status: **evaluated; revised 2026-10-29.** Standalone TollGate on the E750 is
-**feasible** with a 2.4 GHz AP+STA configuration. The earlier "no-go" applies
-only to running BSBF and TollGate **simultaneously** on this unit without a
-tested zone/tproxy design. See
+Status: **evaluated; revised 2026-10-29.** AP+STA on the 2.4 GHz radio works
+(PR #17), but a standalone TollGate install on the same radio was **unstable
+and rolled back** (see the attempt below). The earlier "no-go" now applies to
+both the combined mode and the single-radio standalone install; a two-radio or
+4G-WAN + AP-only topology is the next test. See
 [`BSBF-TOLLGATE-COEXISTENCE.md`](BSBF-TOLLGATE-COEXISTENCE.md).
 
 ## Artifact check (v0.6.0)
@@ -60,15 +61,67 @@ around 0.1–1.0.
    nodogsplash, jq, uhttpd and the portal is unproven. The fleet's MT3000 class
    devices are the supported TollGate target and have far more headroom.
 
+## Standalone attempt (2026-10-29) — failed, rolled back
+
+The offline bundle installed cleanly on the E750 (37 packages, `tollgate-wrt
+0.6.0-r1`, `nodogsplash 5.0.2`, `jq`, `iptables-nft`). The portal/backend
+services came up on `80/2050/2051/2121/8080/8090/8443`, and the package moved
+`eth0` to a new **`br-private` 192.168.9.1** management bridge.
+
+It did **not** produce a usable standalone portal:
+
+- TollGate's upstream manager **removed the existing STA and AP vifs**
+  (`Cleaning up stale STA interfaces`); `br-lan` was left DOWN with no ports.
+- hostapd then failed to recreate the AP:
+  `Could not read interface phy1-ap0 flags: No such device`.
+- Mint probes timed out because there was no usable upstream after the STA was
+  removed; the service stayed in a startup/retry loop.
+- The serial capture showed the kernel process-kill table for `uhttpd`/`udhcpc`
+  at ~1552 s, consistent with memory pressure on the 117 MB RAM.
+- An `upstream_connect` for `hermes-lan` created a STA briefly, but the service
+  restarted, removed it again, and the AP did not return.
+
+The device was rolled back: services stopped/disabled, the pre-change
+`network`/`wireless`/`firewall` restored, `uhttpd` reset to 80/443, the
+TollGate nft includes removed, and a reboot. **BSBF was re-applied and is
+healthy** (`phy1-sta0` + `wwan0` endpoints, egress `23.182.128.219`,
+`RESULT OK`).
+
+Evidence: `evidence/tollgate/2026-10-29_standalone-attempt.txt`.
+
+### What this changes
+
+AP+STA itself works (PR #17), but **TollGate's own upstream/AP manager is not
+stable on this single 2.4 GHz ath9k radio with 117 MB RAM**. The dead 5 GHz
+radio is a headroom problem, not the only cause. Do not retry the same
+combined-radio install without a different topology.
+
+### Recommended next topologies
+
+1. **4G WAN + AP-only** (`wwan1` upstream, `phy1-ap0` portal, no STA): avoids
+   AP+STA and the ath9k race. 4G is ~0.5 Mbps, but it is enough to validate the
+   portal. This is the next test.
+2. **Ethernet WAN + AP-only**: best backhaul, but the single port leaves no
+   wired LAN.
+3. **Two-radio device** (or the E750 after the 5 GHz QCA9887 is repaired):
+   portal on one radio, STA/backhaul on the other. This is the clean long-term
+   answer and the recommended path for a production TollGate.
+4. **Combined BSBF + TollGate** remains blocked until a standalone topology is
+   stable.
+
 ## Decision (revised)
 
 - **Standalone TollGate is a go**: 2.4 GHz AP+STA (`phy1-ap0` + `phy1-sta0`),
   `br-lan` with `eth0`, portal on the AP, STA as WAN. Test it with BSBF stopped.
-- **Simultaneous BSBF + TollGate is conditional**: only after the zone/tproxy
-  design and test matrix in
-  [`BSBF-TOLLGATE-COEXISTENCE.md`](BSBF-TOLLGATE-COEXISTENCE.md) pass.
-- Prerequisites for either: reliable serial recovery, a full private backup,
-  and a tested rollback. The 5 GHz repair is **not** a prerequisite for AP+STA.
+- **Standalone TollGate on the same 2.4 GHz radio is not stable** in the
+  current single-radio layout (see the attempt above). Retry with 4G WAN +
+  AP-only, or a two-radio/5 GHz-repaired unit.
+- **Simultaneous BSBF + TollGate is blocked** until a standalone topology is
+  stable and the zone/tproxy test matrix in
+  [`BSBF-TOLLGATE-COEXISTENCE.md`](BSBF-TOLLGATE-COEXISTENCE.md) passes.
+- Prerequisites: reliable serial recovery, a full private backup, and a tested
+  rollback. The 5 GHz repair is **not** a prerequisite for AP+STA, but it is
+  the recommended long-term fix for radio headroom.
 
 ## If someone proceeds anyway (not recommended)
 

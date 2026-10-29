@@ -1,0 +1,41 @@
+# TollGate v0.6.0 standalone attempt — 2026-10-29
+
+## install (router-side, offline bundle)
+- bundle: tollgate-wrt-0.6.0-mips_24kc-ath79-nand-offline.tar.gz (sha256 bc5338ab...)
+- 37 packages installed; tollgate-wrt 0.6.0-r1, nodogsplash 5.0.2, jq, iptables-nft
+- install-router.sh reached the package postinst and 'Restarting network...'
+
+## state during the attempt
+- eth0 moved to br-private 192.168.9.1 (management)
+- br-lan 192.168.8.1 was DOWN with no bridge ports
+- TollGate's upstream manager removed the STA and AP vifs ('Cleaning up stale STA interfaces')
+- hostapd: 'Could not read interface phy1-ap0 flags: No such device'
+- portal/nodogsplash/backend uhttpd came up on 80/2050/2051/2121/8080/8090/8443
+- mint probes timed out (no usable upstream after the STA was removed)
+- serial showed the kernel process-kill table for uhttpd/udhcpc (~1552 s uptime), consistent with memory pressure on 117 MB RAM
+
+## rollback
+- stopped/disabled tollgate-wrt + nodogsplash; killed leftover uhttpd instances
+- restored /etc/config/{network,wireless,firewall} from the pre-AP backup
+- reset uhttpd to 80/443; removed TollGate nft includes; fw4 restart
+- rebooted; BSBF re-applied with the client playbook
+
+## final state
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0             UP             192.168.8.1/24 fd33:1825:ff29::1/60 fe80::9683:c4ff:fe4d:fc38/64 
+wwan0            UNKNOWN        10.173.184.129/30 fe80::2861:cdff:fe26:c7ec/64 
+phy1-sta0        UP             192.168.50.123/24 fe80::9683:c4ff:fe4d:fc39/64 
+enabled
+id 1 subflow dev phy1-sta0 
+id 2 subflow backup dev wwan0 
+wwan0_rx_bytes=3108
+wwan0_tx_bytes=3548
+== WAN firewall zone ==
+firewall.@zone[0].name='lan'
+firewall.@zone[0].network='lan'
+firewall.@zone[1].name='wan'
+firewall.@zone[1].network='wwan' 'wwan1'
+RESULT OK
+no-tollgate-procs

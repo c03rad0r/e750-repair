@@ -28,8 +28,8 @@ def test_evaluation_records_the_real_artifact_and_checksum() -> None:
 
 def test_decision_is_explicit_and_reversible() -> None:
     doc = read("docs/E750-TOLLGATE.md")
-    assert "Standalone TollGate is a go" in doc
-    assert "Simultaneous BSBF + TollGate is conditional" in doc
+    assert "standalone tollgate on the same 2.4 ghz radio is not stable" in doc.lower()
+    assert "Simultaneous BSBF + TollGate is blocked" in doc
     assert "2.4 GHz AP+STA" in doc
     assert "If someone proceeds anyway" in doc
     assert "scripts/e750-backup.sh" in doc
