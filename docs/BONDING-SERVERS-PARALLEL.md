@@ -167,6 +167,35 @@ No provider snapshot. Everything must be rebuildable from a bare Debian 13:
 - [x] Memory/RSS measured: ~18 MB available, xray ~14% idle and up to ~71% under
       load. Browsing works; the E750 is close to its CPU ceiling.
 
+### Aggregation vs standby (measured 2026-10-29)
+
+The Aldi Talk plan was upgraded, so the 4G can be measured as a real path:
+
+```text
+4G only (STA down)      641 KB/s (~5.1 Mbps), 41-89 ms
+MPTCP failover          session survived the STA loss
+```
+
+With the 4G as an active (non-backup) subflow, MPTCP does use both paths:
+
+```text
+single 50 MB   standby 27.9 Mbps (STA only)
+               aggregate 25.5 Mbps, split 61/39
+4 x 10 MB      standby 9 s  (~35.5 Mbps, STA only)
+               aggregate 39 s (~8.2 Mbps, split 60/40)
+```
+
+Aggregation **works mechanically** but is slower: -9% single-stream and ~4x
+slower under parallel load. The kernel only exposes the `default` scheduler
+(no `mptcp_sched_roundrobin`), and the 4G RTT (41-89 ms) is far worse than the
+STA (~29 ms), so the connection head-of-line blocks on the slower subflow.
+
+Decision: keep `wwan0` as a **backup** subflow. Aggregation remains available
+by setting `bsbf_backup_interfaces: []`; it is not the default because it
+reduces throughput and spends mobile data.
+
+Evidence: `evidence/bonding-servers/2026-10-29_aggregation-test.txt`.
+
 ### Phase 4 — merge and record
 
 - [ ] Evidence files under `evidence/bonding-servers/` and `evidence/portal/`.

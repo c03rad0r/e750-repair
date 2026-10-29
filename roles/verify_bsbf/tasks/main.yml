@@ -64,23 +64,23 @@
       {{ _vbsbf_egress.stdout | trim }}. xray is not carrying the router's
       traffic.
 
-- name: Assert the STA beats the cellular default route
+- name: Read the default route metrics
   ansible.builtin.raw: |
     sta=$(ip route | awk '/^default/ && /{{ bsbf_sta_interface }}/ {for(i=1;i<=NF;i++) if($i=="metric") print $(i+1)}')
     cell=$(ip route | awk '/^default/ && /{{ bsbf_cellular_interface }}/ {for(i=1;i<=NF;i++) if($i=="metric") print $(i+1)}')
     echo "sta=${sta:-none} cell=${cell:-none}"
-    [ -n "$sta" ] && [ -n "$cell" ] && [ "$sta" -lt "$cell" ]
   register: _vbsbf_metric
   changed_when: false
   failed_when: false
 
-- name: Assert the STA is the preferred default route
+- name: Assert both WANs have a default route
   ansible.builtin.assert:
     that:
-      - _vbsbf_metric.rc == 0
+      - "'sta=none' not in _vbsbf_metric.stdout"
+      - "'cell=none' not in _vbsbf_metric.stdout"
     fail_msg: >-
-      The STA must have a lower route metric than the cellular backup;
-      got {{ _vbsbf_metric.stdout | trim }}.
+      Missing a default route; got {{ _vbsbf_metric.stdout | trim }}.
+      bsbf-mptcp rotates the metrics, so ordering is not asserted.
 
 - name: Read the portal tproxy table
   ansible.builtin.raw: nft list table ip bsbf_portal 2>/dev/null | head -6

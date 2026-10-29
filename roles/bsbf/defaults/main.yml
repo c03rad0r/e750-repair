@@ -9,9 +9,9 @@ bsbf_sta_interface: "phy1-sta0"
 bsbf_cellular_interface: "wwan0"
 bsbf_cellular_uci: "wwan1"
 bsbf_wifi_metric: 9
-# The STA route lands at metric 14 after a DHCP renew, so a cellular metric of
-# 13 made the throttled 4G the preferred default route. Keep a safe margin.
-bsbf_cellular_metric: 20
+# bsbf-mptcp rotates the default routes and resets them when a metric would
+# exceed 16, so keep the base metrics small.
+bsbf_cellular_metric: 13
 bsbf_backup_interfaces:
   - wwan0
 

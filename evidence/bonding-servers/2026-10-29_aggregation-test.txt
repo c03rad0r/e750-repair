@@ -1,0 +1,24 @@
+# BSBF aggregation vs standby — 2026-10-29
+
+## 4G after the Aldi Talk plan bump (STA down, self-restoring)
+4g_download=641412 B/s (~5.1 Mbps), ping 41-89 ms, 0% loss
+the existing MPTCP session survived the STA loss (failover proof)
+
+## Single-stream 50 MB (thinkbroadband)
+standby  (wwan0 backup): 3,493,942 B/s = 27.9 Mbps
+                         split sta=56,014,654 wwan=28,252 (4G signalling only)
+aggregate (wwan0 active): 3,185,077 B/s = 25.5 Mbps
+                         split sta=34,065,009 wwan=21,976,213 (61/39)
+
+## Parallel 4 x 10 MB
+standby:   40 MB in 9 s  = ~35.5 Mbps, split sta=44,790,309 wwan=476
+aggregate: 40 MB in 39 s = ~8.2 Mbps,  split sta=27,222,745 wwan=18,311,593
+
+## Interpretation
+- Aggregation is mechanically working: both subflows carry payload.
+- It is slower than standby: -9% single-stream, ~4x slower under parallel load.
+- The 4G RTT is 41-89 ms vs ~29 ms on the STA; the in-kernel `default`
+  scheduler (only scheduler available) head-of-line blocks on the slower path.
+- The 4G link is also variable and may throttle after volume.
+- Decision: keep `wwan0` as a backup subflow (failover). Aggregation stays a
+  documented option (`bsbf_backup_interfaces: []`).
