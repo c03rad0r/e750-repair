@@ -22,7 +22,8 @@ swap/reflow; the 5 GHz lead is board-ID/EEPROM/OTP.
 - 2026-10-29 — PR #12 `f1a9b6f`: TollGate v0.6.0 evaluation, no-go on this unit.
 - 2026-10-29 — PR #13 `c471cbc`: soak harness + final audit; soak started.
 
-This is the canonical tracker for the E750 work.
+This is the canonical tracker for the E750 work. Remaining work is consolidated in
+[`ROADMAP.md`](ROADMAP.md).
 
 Canonical repo: `felixfelix-bot/e750-repair`, default branch `main`.
 All code changes land as PRs to `main`; no hand edits to the device except
