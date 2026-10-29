@@ -16,7 +16,7 @@ wwan0      Aldi Talk 4G     BSBF backup
 BSBF       enabled, tproxy bypass for br-portal, egress 23.182.128.219
 TollGate   v0.6.0 daemon + nodogsplash + portal uhttpd :2051
 health     RESULT OK
-soak       24 h combined soak from 2026-10-29T17:09:40Z (first sample rc=0)
+soak       24 h combined soak from 2026-10-29T17:17:45Z (first sample rc=0)
 ```
 
 Verified: pre-auth splash/portal 200 and internet blocked; `ndsctl auth`;
@@ -68,8 +68,9 @@ portal services. 103 contract tests pass.
       and [`QCA9887-SKIP-OTP.md`](QCA9887-SKIP-OTP.md).
 - [ ] Real 5 GHz client: association, DHCP, splash, payment, post-auth
       (a veth client on `br-portal` already passes splash/portal/auth/HTTP 301).
-- [ ] Try `cal-pci` + `skip_otp` for calibration/stability; add the boot hook
-      and radio1 defaults to the image.
+- [x] `cal-pci` + `skip_otp` tried: AP stayed up, no evidence the cal file was
+      used; removed it. `skip_otp` alone is the reproducible path.
+- [ ] Add the boot hook and radio1 defaults to the image.
 - [ ] Decide whether the 5 GHz repair is still required now that the combined
       2.4 GHz portal + BSBF path works (it is the long-term headroom fix).
 
