@@ -13,6 +13,11 @@ bsbf_cellular_metric: 13
 bsbf_backup_interfaces:
   - wwan0
 
+# Interfaces whose forwarded traffic must NOT be intercepted by the BSBF
+# tproxy. The captive portal's br-portal uses the normal WAN/NAT path.
+bsbf_tproxy_bypass_interfaces:
+  - br-portal
+
 # Packages required for MBIM, MPTCP endpoint management, and the BSBF client.
 bsbf_packages:
   - curl

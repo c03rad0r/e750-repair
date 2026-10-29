@@ -1,0 +1,29 @@
+# Cold boot — BSBF + portal combined 2026-10-29
+
+uptime 1 min; services enabled at boot
+
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+splash=200
+portal=200
+-- pre-auth ping
+--- 1.1.1.1 ping statistics ---
+1 packets transmitted, 0 packets received, 100% packet loss
+Client 10.0.0.102 authenticated.
+-- post-auth ping
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 46.914/49.361/51.809 ms
+-- post-auth http
+cf=301
+HTTP/1.1 301 Moved Permanently
+Server: cloudflare
+Date: Thu, 29 Oct 2026 14:20:39 GMT
+-- health
+firewall.@zone[0].network='lan'
+firewall.@zone[1].name='wan'
+firewall.@zone[1].network='wwan' 'wwan1'
+RESULT FAIL
+-- bsbf
+enabled
+id 1 subflow dev phy1-sta0 
+id 2 subflow backup dev wwan0 

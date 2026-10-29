@@ -1,0 +1,37 @@
+# BSBF + portal combined test — tproxy bypass 2026-10-29
+
+## topology
+- eth0 192.168.8.1 management, BSBF
+- phy1-sta0 hermes-lan (BSBF primary), wwan0 4G (BSBF backup)
+- br-portal 10.0.0.1 + phy1-ap0 portal
+- BSBF tproxy bypass: iifname "br-portal" return
+
+## test
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+splash=200
+portal=200
+-- pre-auth ping
+--- 1.1.1.1 ping statistics ---
+1 packets transmitted, 0 packets received, 100% packet loss
+Client 10.0.0.101 authenticated.
+-- post-auth ping
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 41.585/42.801/44.017 ms
+-- post-auth http
+cf=301
+HTTP/1.1 301 Moved Permanently
+Server: cloudflare
+Date: Thu, 29 Oct 2026 14:18:11 GMT
+-- bsbf
+enabled
+id 2 subflow dev phy1-sta0 
+id 3 subflow backup dev wwan0 
+-- tollgate
+		"config_ok": true,
+		"network_ok": true,
+		"running": true,
+		"version": "TollGate v0.6.0-g9364f2e",
+		"wallet_ok": true
+-- bypass
+		iifname "br-portal" return

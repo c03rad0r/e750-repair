@@ -64,14 +64,15 @@ def test_docs_record_the_result_and_rollback() -> None:
     for needle in (
         "br-portal",
         "10.0.0.1",
-        "TollGate v0.6.0 daemon started successfully",
+        "TollGate v0.6.0 daemon healthy",
         "nodogsplash",
         "200",
-        "10.0.0.100",
-        "post-auth",
-        "rolled back",
-        "evidence/portal/2026-10-29_bridge-test.txt",
-        "Do not leave the open AP running without working enforcement",
+        "301",
+        "tproxy bypass",
+        "Cold boot",
+        "pre-auth",
+        "evidence/portal/2026-10-29_combined-bypass.txt",
+        "AP up with the service stopped",
     ):
         assert needle in doc, needle
 
