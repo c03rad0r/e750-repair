@@ -261,9 +261,14 @@ handler that would recreate both.
       `evidence/tollgate/2026-10-29_4g-aponly-attempt.txt`.
 - [ ] Retry with separate management (`eth0` 192.168.8.1) and portal
       (`br-portal` 10.0.0.1 + AP) bridges, 4G WAN, serial attached.
-- [ ] Then Ethernet WAN + AP-only, then two-radio/5 GHz. Phase 3 (combined)
-      stays blocked.
-- [ ] Revisit the 5 GHz repair separately; it is not a prerequisite for AP+STA.
+- [x] Combined BSBF + TollGate mode works: `br-portal` + AP, BSBF on the
+      management LAN, tproxy bypass for portal clients, post-auth HTTP 301,
+      cold boot verified. Evidence
+      `evidence/portal/2026-10-29_combined-bypass.txt` and
+      `..._cold-boot-combined.txt`.
+- [x] Clean 24 h combined soak started `2026-10-29T14:24:30Z`; complete it.
+- [ ] Two-radio/5 GHz remains the long-term headroom fix; not a prerequisite
+      for the current combined mode.
 
 ## Phase 9 — monitoring, acceptance, and final merge
 

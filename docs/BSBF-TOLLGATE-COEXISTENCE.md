@@ -113,8 +113,11 @@ Goal: a working captive portal with no BSBF running, on the same unit.
       BSBF. **BSBF is healthy again.**
 - [ ] Next: **4G WAN + AP-only** (no STA) to avoid the single-radio AP+STA
       race; then Ethernet WAN + AP-only; then a two-radio/5 GHz-repaired unit.
-- [ ] Do not retry the same combined-radio install; do not start Phase 3 until a
-      standalone topology is stable.
+- [x] Standalone portal (BSBF stopped) works: splash/portal 200, pre-auth
+      blocked, `ndsctl auth`, post-auth ping + HTTP 301.
+- [x] Combined mode works with the `br-portal` tproxy bypass (PR #22); cold
+      boot verified; clean 24 h soak started.
+- [ ] Complete the 24 h combined soak.
 
 Evidence: `evidence/tollgate/2026-10-29_standalone-attempt.txt`.
 
@@ -133,7 +136,19 @@ Evidence: `evidence/tollgate/2026-10-29_standalone-attempt.txt`.
       PHY can be reassigned in software).
 - [ ] Record the measured trade-off in the docs.
 
-## Phase 3 — Combine BSBF and TollGate
+## Phase 3 — Combine BSBF and TollGate — WORKING (2026-10-29)
+
+Combined mode is working. The portal lives on `br-portal` 10.0.0.1 (AP only);
+BSBF keeps the management LAN (`eth0` 192.168.8.1). A BSBF nft bypass
+(`iifname "br-portal" return`) keeps portal client TCP out of the tproxy, and is
+persisted by the `bsbf-bonding-nft` boot hook.
+
+Verified with a veth client: splash/portal 200, pre-auth blocked, `ndsctl auth`,
+post-auth ping + HTTP 301, TollGate `config_ok/network_ok/wallet_ok`, BSBF
+endpoints intact, cold boot re-applies the bypass. Evidence:
+`evidence/portal/2026-10-29_combined-bypass.txt` and
+`..._cold-boot-combined.txt`. Clean 24 h combined soak started
+`2026-10-29T14:24:30Z`.
 
 Only after both standalone tests pass.
 
@@ -159,7 +174,8 @@ Only after both standalone tests pass.
 - [ ] STA drop: failover to 4G still works while the portal is up.
 - [ ] Portal restart / BSBF restart independently: no deadlock.
 - [ ] Throughput and CPU/RAM with one and several portal clients.
-- [ ] 24 h soak with both enabled; no unexplained failures.
+- [x] 24 h soak with both enabled started `2026-10-29T14:24:30Z` (first
+      sample rc=0); complete and review.
 - [ ] Rollback to BSBF-only and to TollGate-only, both tested.
 
 ### 3c. Fallbacks if coexistence is unstable
