@@ -228,22 +228,26 @@ handler that would recreate both.
 - [ ] Fold `gl-e750-mcu` into the image after Phase 6 (not yet: probe silent).
 - [x] PR #9 + merge.
 
-## Phase 8 — TollGate evaluation (P2, optional) — NO-GO
+## Phase 8 — TollGate evaluation (P2) — REVISED
 
 - [x] Verified the artifact: `FreedomTechFeed/packages` v0.6.0 publishes
       `tollgate-wrt-0.6.0-mips_24kc-ath79-nand-offline.tar.gz` (9.3 MB,
       sha256 `bc5338ab…`, 37 packages incl. nodogsplash/iptables-nft/jq).
 - [x] Compared with the device: 85.9 MB free overlay (fits), ~15.7 MB available
       RAM, one 650 MHz MIPS core, 2.4 GHz only, AP disabled.
-- [x] Decision: **do not deploy TollGate on this unit.** It turns the router
-      into a captive-portal AP, but the only radio is the BSBF STA uplink and
-      the LAN has no `br-lan`; iptables/NAT would overlap the BSBF nft tproxy,
-      and serial recovery is currently unreliable. Keep BSBF; use a supported
-      AP-class device for TollGate.
+- [x] Decision (revised): **standalone TollGate is a go** on 2.4 GHz AP+STA
+      (`phy1-ap0` + `phy1-sta0`, `br-lan` with `eth0`, portal on the AP, STA as
+      WAN). **Simultaneous BSBF + TollGate is conditional** on the zone/tproxy
+      and test matrix. The dead 5 GHz radio is not a blocker for AP+STA.
 - [x] `docs/E750-TOLLGATE.md` + evidence
-      `evidence/tollgate/2026-10-29_asset-check.txt`. PR #12 merged.
-- [ ] Revisit only after 5 GHz repair + `br-lan` + reliable serial + a spare-unit
-      CPU/RAM test.
+      `evidence/tollgate/2026-10-29_asset-check.txt`. PR #12 merged; wording
+      corrected in PR #16.
+- [x] New separate-first tracker:
+      `docs/BSBF-TOLLGATE-COEXISTENCE.md` (Phase 0–6, implementation queue,
+      PR order, rollback and acceptance criteria).
+- [ ] Implement Phase 2/3 of that tracker: `br-lan` + AP, TollGate standalone,
+      then the combined mode. Each as a PR, each with a tested rollback.
+- [ ] Revisit the 5 GHz repair separately; it is not a prerequisite for AP+STA.
 
 ## Phase 9 — monitoring, acceptance, and final merge
 
