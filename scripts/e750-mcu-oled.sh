@@ -11,7 +11,7 @@ set -u
 DEV=/dev/ttyS0
 MODE=$(cat /etc/e750/mode 2>/dev/null || echo standby)
 SSID=$(uci -q get wireless.default_radio1.ssid 2>/dev/null || echo TollGate-E750)
-CLIENTS=$(iw dev phy2-ap0 station dump 2>/dev/null | grep -c '^Station' || echo 0)
+CLIENTS=$(iw dev phy1-ap0 station dump 2>/dev/null | grep -c '^Station' || echo 0)
 CLOCK=$(date +%H:%M)
 UP5G=$(uci -q get wireless.default_radio1.disabled 2>/dev/null || echo 0)
 [ "$UP5G" = "0" ] && UP5G=1 || UP5G=0
