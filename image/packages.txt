@@ -24,6 +24,8 @@ uqmi
 
 # Diagnostics
 coreutils-stty
+coreutils-base64
+lrzsz
 picocom
 curl
 
