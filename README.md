@@ -49,7 +49,7 @@ additive role and playbook.
 | Clean image | [`docs/E750-IMAGE.md`](docs/E750-IMAGE.md) | pinned 25.12.5 ImageBuilder recipe (build only) |
 | MCU/OLED | [`docs/E750-MCU.md`](docs/E750-MCU.md) | protocol investigation; daemon deferred |
 | TollGate | [`docs/E750-TOLLGATE.md`](docs/E750-TOLLGATE.md) | v0.6.0 evaluated; AP+STA works, standalone install unstable |
-| BSBF + TollGate | [`docs/BSBF-TOLLGATE-COEXISTENCE.md`](docs/BSBF-TOLLGATE-COEXISTENCE.md) | separate-first plan and combined-mode checklist |
+| BSBF + TollGate | [`docs/BSBF-TOLLGATE-COEXISTENCE.md`](docs/BSBF-TOLLGATE-COEXISTENCE.md) | combined mode working: `br-portal` + BSBF tproxy bypass |
 | Tracker | [`docs/E750-REMEDIATION.md`](docs/E750-REMEDIATION.md) | phases, checklist, execution log |
 
 ---
