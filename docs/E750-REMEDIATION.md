@@ -214,12 +214,22 @@ handler that would recreate both.
 - [ ] Fold `gl-e750-mcu` into the image after Phase 6.
 - [x] PR #9 + merge.
 
-## Phase 8 — TollGate evaluation (P2, optional)
+## Phase 8 — TollGate evaluation (P2, optional) — NO-GO
 
-- [ ] Evaluate the `add_gle750` MIPS branch / `mips_24kc` package on this
-      device: 128 MB NAND, 117 MB RAM, 2.4 GHz only.
-- [ ] Decide TollGate vs BSBF WAN; document CPU/RAM/throughput.
-- [ ] If adopted, add roles/tests/docs and PR + merge.
+- [x] Verified the artifact: `FreedomTechFeed/packages` v0.6.0 publishes
+      `tollgate-wrt-0.6.0-mips_24kc-ath79-nand-offline.tar.gz` (9.3 MB,
+      sha256 `bc5338ab…`, 37 packages incl. nodogsplash/iptables-nft/jq).
+- [x] Compared with the device: 85.9 MB free overlay (fits), ~15.7 MB available
+      RAM, one 650 MHz MIPS core, 2.4 GHz only, AP disabled.
+- [x] Decision: **do not deploy TollGate on this unit.** It turns the router
+      into a captive-portal AP, but the only radio is the BSBF STA uplink and
+      the LAN has no `br-lan`; iptables/NAT would overlap the BSBF nft tproxy,
+      and serial recovery is currently unreliable. Keep BSBF; use a supported
+      AP-class device for TollGate.
+- [x] `docs/E750-TOLLGATE.md` + evidence
+      `evidence/tollgate/2026-10-29_asset-check.txt`. PR #12 merged.
+- [ ] Revisit only after 5 GHz repair + `br-lan` + reliable serial + a spare-unit
+      CPU/RAM test.
 
 ## Phase 9 — monitoring, acceptance, and final merge
 
