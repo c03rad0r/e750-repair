@@ -1,0 +1,114 @@
+# E750 4G diagnostics — 2026-10-28T23:59:38Z
+
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+== 4G interface ==
+{
+	"up": true,
+	"pending": false,
+	"available": true,
+	"autostart": true,
+	"dynamic": false,
+	"uptime": 10860,
+	"l3_device": "wwan0",
+	"proto": "mbim",
+	"metric": 13,
+	"dns_metric": 0,
+	"delegation": true,
+	"ipv4-address": [
+		
+	],
+	"ipv6-address": [
+		
+	],
+	"ipv6-prefix": [
+		
+	],
+	"ipv6-prefix-assignment": [
+		
+	],
+	"route": [
+		
+	],
+	"dns-server": [
+		
+	],
+	"dns-search": [
+		
+	],
+	"neighbors": [
+		
+	],
+	"inactive": {
+		"ipv4-address": [
+			
+		],
+		"ipv6-address": [
+			
+		],
+		"route": [
+			
+		],
+		"dns-server": [
+			
+		],
+		"dns-search": [
+			
+		],
+		"neighbors": [
+			
+		]
+	},
+	"data": {
+		
+	}
+}
+== MBIM ==
+-- caps
+ERROR: mbim message timeout
+-- pinstate
+ERROR: mbim message timeout
+-- registration
+ERROR: mbim message timeout
+== AT ==
+-- AT
+AT
+OK
+-- ATI
+ATI
+Quectel
+EM060K-GL
+Revision: EM060KGLAAR01A11M2G
+
+OK
+-- AT+CPIN?
+AT+CPIN?
++CPIN: READY
+
+OK
+-- AT+COPS?
+AT+COPS?
++COPS: 0,0,"MEDIONmobile",7
+
+OK
+-- AT+QCSQ
+AT+QCSQ
++QCSQ: "LTE",-60,-91,-4,-14
+
+OK
+-- AT+QENG="servingcell"
+AT+QENG="servingcell"
++QENG: "servingcell","NOCONN","LTE","FDD",262,03,501002,294,6200,20,3,3,55F0,-90,-13,-59,9,-,37
+
+OK
+-- AT+CGDCONT?
+AT+CGDCONT?
++CGDCONT: 1,"IPV4V6","internet","0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",0,0,0,0
++CGDCONT: 2,"IPV4V6","ims","0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",0,0,0,0
++CGDCONT: 3,"IPV4V6","SOS","0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",0,0,0,1
++CGDCONT: 4,"IP","internet.eplus.de","0.0.0.0",0,0,0,0
+
+OK
+== data ==
+wwan0_rx_bytes=3263547
+wwan0_tx_bytes=295382

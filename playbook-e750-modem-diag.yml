@@ -1,0 +1,18 @@
+---
+# Read-only 4G/LTE diagnostics for the E750. Run from x280:
+#
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-modem-diag.yml
+#
+# The role installs coreutils-stty/picocom and runs scripts/e750-modem-diag.sh.
+# It does not change the APN, the modem state, or any network interface.
+
+- name: GL-E750 — 4G modem diagnostics
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Apply the modem diagnostic role
+      ansible.builtin.include_role:
+        name: e750_modem_diag

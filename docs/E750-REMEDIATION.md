@@ -130,13 +130,16 @@ handler that would recreate both.
 
 ## Phase 4 — 4G, server, and path quality (P1)
 
-- [ ] Add `scripts/e750-modem-diag.sh` and a diagnostics package set
-      (`coreutils-stty`, `picocom`): `AT+CPIN?`, `AT+COPS?`, `AT+QCSQ`/
-      `AT+QENG="servingcell"`, `AT+CGDCONT?`, `umbim` queries, APN, data counter.
-- [ ] Measure the Aldi Talk plan/throttle/signal; try antenna/position.
-      Current 4G ≈ 0.5 Mbps, so it stays backup.
-- [ ] Parameterize `bsbf_backup_interfaces`; if 4G improves, remove `wwan0`,
-      re-test aggregation, update docs/evidence.
+- [x] Add `scripts/e750-modem-diag.sh`, `roles/e750_modem_diag`, and
+      `coreutils-stty`/`picocom`: `AT+CPIN?`, `AT+COPS?`, `AT+QCSQ`/
+      `AT+QENG="servingcell"`, `AT+CGDCONT?`, `umbim` registration, data counter.
+- [x] Run the diagnostics: SIM READY, MEDIONmobile LTE home, RSRP -59 dBm,
+      SINR 9 dB, APN `internet.eplus.de`. RF is healthy; ~0.5 Mbps is likely a
+      plan throttle/APN policy, not signal.
+- [x] Evidence in `evidence/modem/2026-10-29_diag.txt`; docs
+      `docs/E750-MODEM-DIAG.md`. PR #5 + merge.
+- [ ] Check/upgrade the Aldi Talk plan; if 4G becomes faster than the STA,
+      remove `wwan0` from `bsbf_backup_interfaces` and re-test aggregation.
 - [ ] Parameterize the BSBF server host; stand up an EU server (or document the
       Houston latency); update client server/port/UUID through the role.
 - [ ] Make the STA SSID/PSK a role variable from OpenBao; remove the hardcoded

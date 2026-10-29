@@ -1,0 +1,7 @@
+---
+e750_modem_packages:
+  - coreutils-stty
+  - picocom
+e750_modem_at_port: "/dev/ttyUSB3"
+e750_modem_wdm: "/dev/cdc-wdm0"
+e750_modem_script: "{{ playbook_dir }}/scripts/e750-modem-diag.sh"

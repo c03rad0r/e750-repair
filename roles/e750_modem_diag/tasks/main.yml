@@ -1,0 +1,22 @@
+---
+# Read-only 4G diagnostics. Installs stty/picocom so the AT port can be put in
+# raw mode, then runs the report script. No modem settings are changed.
+
+- name: Refresh the apk index
+  ansible.builtin.raw: apk update
+  register: _modem_apk_update
+  changed_when: true
+
+- name: Install the modem diagnostic tools
+  ansible.builtin.raw: "apk add {{ e750_modem_packages | join(' ') }}"
+  register: _modem_apk
+  changed_when: "'Installing' in _modem_apk.stdout"
+
+- name: Run the 4G diagnostic report
+  ansible.builtin.raw: "AT_PORT={{ e750_modem_at_port }} WDM={{ e750_modem_wdm }} {{ lookup('file', e750_modem_script) }}"
+  register: _modem_diag
+  changed_when: false
+
+- name: Show the 4G diagnostic report
+  ansible.builtin.debug:
+    msg: "{{ _modem_diag.stdout_lines }}"
