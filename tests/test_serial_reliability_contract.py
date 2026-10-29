@@ -32,6 +32,8 @@ def test_tx_test_checks_echo_and_output() -> None:
     assert "out.count(nonce) >= 2" in text
     assert "wake_output" in text
     assert "summary clean=" in text
+    assert "--loopback" in text
+    assert "summary loopback_clean=" in text
 
 
 def test_wake_tool_sends_cr_burst_and_retries() -> None:
@@ -54,5 +56,16 @@ def test_no_secrets_or_psk() -> None:
 
 def test_docs_capture_the_adapter_finding() -> None:
     doc = read("docs/SERIAL-RELIABILITY.md")
-    for needle in ("BH00DL3M", "BG046H5F", "askfirst", "3.3 V", "loopback"):
-        assert needle in doc, needle
+    doc_lower = doc.lower()
+    for needle in (
+        "BH00DL3M",
+        "BG046H5F",
+        "askfirst",
+        "3.3 V",
+        "loopback",
+        "cold solder joint",
+        "continuity",
+        "reflow",
+        "--loopback",
+    ):
+        assert needle.lower() in doc_lower, needle

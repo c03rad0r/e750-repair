@@ -46,7 +46,7 @@ def open_port(device: str, baud: int) -> int:
     return fd
 
 
-def read_for(fd: int, seconds: float, idle: float = 0.2) -> str:
+def read_bytes(fd: int, seconds: float, idle: float = 0.2) -> bytes:
     buf = b""
     end = time.time() + seconds
     last = time.time()
@@ -62,7 +62,11 @@ def read_for(fd: int, seconds: float, idle: float = 0.2) -> str:
                 last = time.time()
         if buf and time.time() - last > idle:
             break
-    return buf.decode("utf-8", "replace").replace("\r", "")
+    return buf
+
+
+def read_for(fd: int, seconds: float, idle: float = 0.2) -> str:
+    return read_bytes(fd, seconds, idle).decode("utf-8", "replace").replace("\r", "")
 
 
 def main() -> int:
@@ -73,9 +77,36 @@ def main() -> int:
     parser.add_argument("--wake-crs", type=int, default=10)
     parser.add_argument("--pacing", type=float, default=0.02)
     parser.add_argument("--timeout", type=float, default=1.5)
+    parser.add_argument(
+        "--loopback",
+        action="store_true",
+        help="short TX/RX at the adapter/cable end; send a printable pattern and compare",
+    )
     args = parser.parse_args()
 
     fd = open_port(args.device, args.baud)
+
+    if args.loopback:
+        pattern = bytes(range(0x20, 0x7F))
+        clean = 0
+        for i in range(args.count):
+            os.write(fd, pattern)
+            data = read_bytes(fd, args.timeout)
+            ok = data == pattern
+            print(
+                f"[{i}] {'OK' if ok else 'FAIL'} "
+                f"sent={len(pattern)} received={len(data)}"
+            )
+            if not ok:
+                mismatch = next(
+                    (j for j, (a, b) in enumerate(zip(pattern, data)) if a != b),
+                    min(len(pattern), len(data)),
+                )
+                print(f"    first_mismatch={mismatch} sent={pattern[mismatch:mismatch+8]!r} got={data[mismatch:mismatch+8]!r}")
+            clean += 1 if ok else 0
+        os.close(fd)
+        print(f"summary loopback_clean={clean}/{args.count} corrupt={args.count - clean}")
+        return 0 if clean == args.count else 1
 
     wake = ""
     for _ in range(args.wake_crs):
