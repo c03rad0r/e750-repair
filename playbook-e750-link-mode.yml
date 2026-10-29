@@ -1,0 +1,16 @@
+---
+# Install the standby/aggregate controller in observe-only mode.
+#
+#   ssh x280
+#   cd ~/e750-repair
+#   ansible-playbook -i inventory/e750-ssh.yml playbook-e750-link-mode.yml
+#
+# Flip to active switching later with:
+#   -e e750_link_mode_enabled=1 -e e750_link_mode_observe_only=0
+- name: GL-E750 — link-mode controller
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+  roles:
+    - role: e750_link_mode

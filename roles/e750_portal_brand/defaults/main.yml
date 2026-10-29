@@ -1,0 +1,10 @@
+---
+# Branding for the TollGate portal. Kept separate from the network-owning
+# portal role so it can be re-applied without touching br-portal, radios or
+# BSBF.
+e750_brand_gateway_name: "TollGate-E750 · Bonded"
+e750_brand_html_title: "TollGate-E750 · Bonded Gateway"
+e750_brand_portal_title: "Bonded Internet Access"
+e750_brand_powered_by: "2 uplinks · MPTCP · powered by TollGate"
+e750_brand_site_dir: "/etc/tollgate/tollgate-captive-portal-site"
+e750_brand_badge_text: "🔗 Bonded gateway · 2 uplinks"

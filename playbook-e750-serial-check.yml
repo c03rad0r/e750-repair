@@ -1,0 +1,40 @@
+---
+# Checksummed serial preflight. Run this on the host that owns the E750 UART
+# (x280: /dev/ttyE750) before any recovery or flash step.
+#
+#   ssh x280
+#   cd ~/e750-repair
+#   ansible-playbook -i inventory/hosts.yml playbook-e750-serial-check.yml \
+#     -e device_serial_port=/dev/ttyE750 -e device_serial_baud=115200
+#
+# Every command goes through the serial_console plugin's base64 + SHA-256
+# wrapper, so a corrupted byte causes a retry instead of a different command.
+
+- name: GL-E750 — checksummed serial preflight
+  hosts: e750
+  gather_facts: false
+  any_errors_fatal: true
+  tasks:
+    - name: Read the kernel over the checksummed console
+      ansible.builtin.raw: uname -a
+      register: _serial_uname
+      changed_when: false
+
+    - name: Assert the console is alive
+      ansible.builtin.assert:
+        that:
+          - "'Linux' in _serial_uname.stdout"
+        fail_msg: >-
+          The console did not return a Linux banner; got
+          {{ _serial_uname.stdout | default('') | truncate(200) }}
+
+    - name: Read the free memory over the checksummed console
+      ansible.builtin.raw: free -m | head -2
+      register: _serial_mem
+      changed_when: false
+
+    - name: Show the serial state
+      ansible.builtin.debug:
+        msg:
+          - "{{ _serial_uname.stdout_lines }}"
+          - "{{ _serial_mem.stdout_lines }}"

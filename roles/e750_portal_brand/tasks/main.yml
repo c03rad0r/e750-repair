@@ -1,0 +1,65 @@
+---
+- name: Set the nodogsplash gateway name
+  ansible.builtin.raw: |
+    if [ -x /etc/init.d/nodogsplash ]; then
+      uci set nodogsplash.@nodogsplash[0].gatewayname='{{ e750_brand_gateway_name }}'
+      uci commit nodogsplash
+      echo "gatewayname=$(uci -q get nodogsplash.@nodogsplash[0].gatewayname)"
+    fi
+  changed_when: true
+
+- name: Localise the TollGate portal strings
+  ansible.builtin.raw: |
+    set -e
+    f={{ e750_brand_site_dir }}/locales/en.json
+    if [ -f "$f" ]; then
+      sed -i 's|"html_title": "[^"]*"|"html_title": "{{ e750_brand_html_title }}"|' "$f"
+      sed -i 's|"portal_title": "[^"]*"|"portal_title": "{{ e750_brand_portal_title }}"|' "$f"
+      sed -i 's|"powered_by": "[^"]*"|"powered_by": "{{ e750_brand_powered_by }}"|' "$f"
+      grep -E '"html_title"|"portal_title"|"powered_by"' "$f" | head -3
+    else
+      echo "no portal site installed; skipping locales"
+    fi
+  changed_when: true
+
+- name: Add the bonded-gateway badge and live updater
+  ansible.builtin.raw: |
+    set -e
+    f={{ e750_brand_site_dir }}/splash.html
+    if [ ! -f "$f" ]; then
+      echo "no splash.html; skipping"
+      exit 0
+    fi
+    if ! grep -q 'bond-badge' "$f"; then
+      sed -i 's|<div id="root"></div>|<div id="bond-badge" style="font-family:system-ui,sans-serif;max-width:480px;margin:1rem auto 0;padding:0.6rem 1rem;border-radius:0.5rem;background:rgb(20,20,20);color:rgb(230,230,230);font-size:0.9rem;text-align:center">{{ e750_brand_badge_text }}</div><div id="root"></div>|' "$f"
+    fi
+    if ! grep -q 'bond.json' "$f"; then
+      sed -i 's#</body>#<script>fetch("/bond.json").then(function(r){return r.json()}).then(function(d){var b=document.getElementById("bond-badge");if(b){if(d.mode){b.textContent="🔗 "+d.mode+" · "+(d.uplinks||2)+" uplinks";}}}).catch(function(){});</script></body>#' "$f"
+    fi
+    grep -c 'bond-badge' "$f"
+  changed_when: true
+
+- name: Restart the portal front end
+  ansible.builtin.raw: |
+    if [ -x /etc/init.d/nodogsplash ]; then
+      /etc/init.d/nodogsplash restart >/dev/null 2>&1 || true
+    fi
+    /etc/init.d/uhttpd restart >/dev/null 2>&1 || true
+    sleep 3
+    echo restarted
+  changed_when: true
+
+- name: Verify the branded portal
+  ansible.builtin.raw: |
+    echo "=== gatewayname ==="
+    uci -q get nodogsplash.@nodogsplash[0].gatewayname
+    echo "=== locales ==="
+    grep -E '"html_title"|"portal_title"|"powered_by"' {{ e750_brand_site_dir }}/locales/en.json 2>/dev/null | head -3
+    echo "=== splash badge ==="
+    curl -s --max-time 5 http://10.0.0.1:2051/splash.html | grep -o 'bond-badge' | head -2
+  register: _brand_verify
+  changed_when: false
+
+- name: Show the branding
+  ansible.builtin.debug:
+    msg: "{{ _brand_verify.stdout_lines }}"

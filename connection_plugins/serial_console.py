@@ -31,6 +31,10 @@ sends Ctrl-C + Ctrl-U before every command to guarantee a clean line.
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import re
+import secrets
 import time
 
 from ansible.errors import AnsibleConnectionFailure
@@ -53,22 +57,30 @@ DOCUMENTATION = """
         description: Serial device path.
         default: /dev/ttyUSB0
         vars:
-          - ansible_serial_port
+          - name: ansible_serial_port
       baud:
         description: Baud rate.
         default: 115200
         vars:
-          - ansible_serial_baud
+          - name: ansible_serial_baud
       timeout:
         description: Per-command read timeout in seconds.
         default: 15
         vars:
-          - ansible_serial_timeout
+          - name: ansible_serial_timeout
       retries:
         description: How many times to resend a command whose echo is corrupted.
         default: 20
         vars:
-          - ansible_serial_retries
+          - name: ansible_serial_retries
+      verify_checksum:
+        description: >-
+          Run each command through a base64 + SHA-256 wrapper so the device
+          executes it only if the payload arrived intact. Falls back to the
+          echo check when base64/sha256sum are missing.
+        default: true
+        vars:
+          - name: ansible_serial_verify_checksum
 """
 
 
@@ -79,6 +91,7 @@ class Connection(ConnectionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._serial = None
+        self._checksum_supported = None
 
     # ── lifecycle ────────────────────────────────────────────────────────────
     def _connect(self):
@@ -137,10 +150,101 @@ class Connection(ConnectionBase):
         self._serial.write((cmd + "\r").encode())
 
     def exec_command(self, cmd, in_data=None, sudoable=True):
-        """Run `cmd` on the console, retrying until its echo is clean."""
+        """Run `cmd` on the console.
+
+        With `verify_checksum` the command travels as base64 and the device
+        hashes it before running, so a mangled byte can only cause a retry,
+        never a different command.
+        """
         super().exec_command(cmd, in_data=in_data, sudoable=sudoable)
         self._connect()
 
+        if bool(self.get_option("verify_checksum")):
+            if self._checksum_supported is None:
+                self._checksum_supported = self._probe_checksum()
+            if self._checksum_supported:
+                rc, out, err = self._exec_checksum(cmd)
+                return (rc, out.encode(), err.encode())
+
+        rc, out, err = self._exec_legacy(cmd)
+        return (rc, out.encode(), err.encode())
+
+    def _probe_checksum(self) -> bool:
+        """Check once whether the device can decode base64 and hash it."""
+        try:
+            rc, out, _ = self._exec_legacy(
+                "command -v base64 >/dev/null 2>&1 && "
+                "command -v sha256sum >/dev/null 2>&1 && echo __CKSUM_OK__"
+            )
+        except AnsibleConnectionFailure:
+            return False
+        return rc == 0 and "__CKSUM_OK__" in out
+
+    @staticmethod
+    def _build_checksum_line(cmd: str, nonce: str) -> str:
+        payload = cmd.encode()
+        b64 = base64.b64encode(payload).decode()
+        sha = hashlib.sha256(payload).hexdigest()
+        b = f"B64_{nonce}"
+        g = f"G_{nonce}"
+        r = f"RC_{nonce}"
+        return (
+            f"{b}='{b64}'; "
+            f"printf '%s' \"${b}\" | base64 -d > /tmp/.ansible-cmd 2>/dev/null; "
+            f"{g}=$(sha256sum /tmp/.ansible-cmd 2>/dev/null | cut -d' ' -f1); "
+            f"if [ \"${g}\" = '{sha}' ]; then "
+            f"echo __BEGIN_{nonce}__; sh /tmp/.ansible-cmd; {r}=$?; "
+            f"echo __END_{nonce}__; else {r}=97; fi; "
+            f"rm -f /tmp/.ansible-cmd; echo __DONE_{nonce}__ ${{{r}}}"
+        )
+
+    @staticmethod
+    def _parse_checksum(text: str, nonce: str):
+        m = re.search(rf"__DONE_{nonce}__ (\d+)", text)
+        if not m:
+            return None
+        rc = int(m.group(1))
+        begin = f"__BEGIN_{nonce}__"
+        end = f"__END_{nonce}__"
+        bi = text.rfind(begin)
+        ei = text.find(end, bi + 1) if bi >= 0 else -1
+        if bi < 0 or ei < 0:
+            return None
+        return rc, text[bi + len(begin):ei]
+
+    def _exec_checksum(self, cmd: str):
+        retries = int(self.get_option("retries"))
+        window = float(self.get_option("timeout")) / 4.0
+        best = ""
+
+        # Very long commands would need a wrapper the console line discipline
+        # may truncate; fall back to the echo path for those.
+        if len(base64.b64encode(cmd.encode())) > 2000:
+            return self._exec_legacy(cmd)
+
+        for _ in range(retries):
+            nonce = secrets.token_hex(4)
+            self._send(self._build_checksum_line(cmd, nonce))
+            raw = self._drain(window)
+            text = raw.decode("utf-8", errors="replace").replace("\r", "")
+            parsed = self._parse_checksum(text, nonce)
+            if parsed is not None:
+                rc, body = parsed
+                if rc != 97:  # 97 = payload hash mismatch on the device
+                    return (rc, body, "")
+                best = text
+            else:
+                if len(text) > len(best):
+                    best = text
+            time.sleep(0.2)
+
+        raise AnsibleConnectionFailure(
+            "serial transport could not deliver this command intact after "
+            f"{retries} attempts (checksum/echo failed). Last output:\n{best[-500:]}"
+        )
+
+    def _exec_legacy(self, cmd: str):
+        """Run `cmd` on the console, retrying until its echo is clean."""
         retries = int(self.get_option("retries"))
         window = float(self.get_option("timeout")) / 4.0
         best = ""

@@ -31,3 +31,6 @@ curl
 
 # WiFi STA
 wpad-basic-mbedtls
+
+# Captive portal
+nodogsplash

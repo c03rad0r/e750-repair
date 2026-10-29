@@ -1,0 +1,15 @@
+---
+# Drive the E750 OLED through the MCU (TollGate SSID + link mode + clock).
+#
+#   ssh x280
+#   cd ~/e750-repair
+#   ansible-playbook -i inventory/e750-ssh.yml playbook-e750-mcu-oled.yml
+#
+# To stop and leave the console alone: remove the e750-mcu-oled cron line.
+- name: GL-E750 — OLED driver
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+  roles:
+    - role: e750_mcu_oled

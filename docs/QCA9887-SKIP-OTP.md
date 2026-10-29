@@ -71,3 +71,23 @@ dmesg still reported the EEPROM `-22` and there was no evidence the cal file was
 used. Removed the cal file and rebooted: the 5 GHz AP still works with
 `skip_otp` alone. Keep the role skip_otp-only; the cal file is not in the public
 image. Evidence: `evidence/caldata/2026-10-29_cal-skip-otp.txt`.
+
+
+## Art-blob calibration (2026-10-30) — not possible
+
+Extracted `art@0x5000/0x440` to `cal-pci-0000:00:00.0.bin`, disabled the
+`skip_otp` hook and rebooted. The driver still failed at:
+
+```text
+failed to read device EEPROM at 0000
+failed to read calibration data from EEPROM: -22
+otp calibration failed: 2
+could not init core (-22)
+```
+
+So ath10k does **not** fall back to `cal-pci` for this chip; it requires the OTP,
+and the OTP read is broken. Without a driver change or a donor `pre-cal` (which
+failed with `-122`), per-device calibration is unrecoverable. Restored
+`skip_otp=1`; the 5 GHz AP is back and the radio remains uncalibrated.
+
+Evidence: `evidence/caldata/2026-10-30_art-blob-calibration.txt`.

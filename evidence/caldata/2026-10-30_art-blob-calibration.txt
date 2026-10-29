@@ -1,0 +1,25 @@
+# Art-blob calibration attempt — 2026-10-30
+
+## Setup
+- extracted art mtd2 at 0x5000, 0x440 bytes (1088 B)
+- header: 44 08 1b a8 04 01 94 83 c4 4d fc 3a (5 GHz MAC ...:3a)
+- installed as /lib/firmware/ath10k/QCA9887/hw1.0/cal-pci-0000:00:00.0.bin
+- disabled /etc/init.d/ath10k-skip-otp (skip_otp=0), rebooted
+
+## Result (dmesg)
+[   32.322465] ath10k_pci 0000:00:00.0: failed to read device EEPROM at 0000
+[   32.329523] ath10k_pci 0000:00:00.0: failed to read calibration data from EEPROM: -22
+[   32.404480] ath10k_pci 0000:00:00.0: otp calibration failed: 2
+[   32.410547] ath10k_pci 0000:00:00.0: failed to run otp: -22 (download-cal-data)
+[   32.418133] ath10k_pci 0000:00:00.0: could not init core (-22)
+[   32.441702] ath10k_pci 0000:00:00.0: could not probe fw (-22)
+
+No 5 GHz phy; only phy1-sta0 (2.4 GHz).
+
+## Conclusion
+The QCA9887 path requires OTP calibration; the driver does not fall back to the
+cal-pci file. The OTP read fails with -22, so per-device calibration is not
+recoverable with the stock driver and this art blob.
+
+Restored: cal-pci removed, ath10k-skip-otp re-enabled, rebooted. skip_otp=Y,
+phy2-ap0 back on ch36, phy1-sta0 connected, health OK.

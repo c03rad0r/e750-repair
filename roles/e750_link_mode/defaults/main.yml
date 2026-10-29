@@ -1,0 +1,12 @@
+---
+# Link-mode controller: standby (wwan0 backup) vs aggregate (wwan0 active).
+# Observe-only by default; flipping `enabled` is the operator's decision.
+e750_link_mode_enabled: 0
+e750_link_mode_observe_only: 1
+e750_link_mode_interval: 60
+e750_link_mode_window: 5
+e750_link_mode_rtt_ratio_enter: "1.5"
+e750_link_mode_rtt_ratio_exit: "2.0"
+e750_link_mode_loss_max: 3
+e750_link_mode_cpu_idle_min: 30
+e750_link_mode_dwell_seconds: 1800

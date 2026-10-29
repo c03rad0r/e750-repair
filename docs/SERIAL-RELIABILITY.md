@@ -120,3 +120,26 @@ running process is `/sbin/askfirst /usr/libexec/login.sh`. It deliberately
 waits for a valid Enter. Changing it to `respawn` would start the console
 without an Enter, but commands would still be corrupted by the bad TX, so the
 hardware fix is the correct one. Keep the default `askfirst` behavior.
+
+## Regression after closing the enclosure (2026-10-29/30)
+
+| Moment | Raw command result |
+|---|---|
+| After re-solder | 96/100 clean (one natural bit flip caught by the checksum) |
+| Immediately after closing the case | 1/20, then 0/10 clean |
+| 2026-10-30 | 0/5, empty output on every attempt |
+
+The failure mode changed from "TX corrupts" to "no bytes at all", which points
+at the connector/cable or a pinched lead inside the enclosure, not at the FTDI
+timing. The MT6000 on the same hub remains clean, so the host and hub are fine.
+
+Consequences:
+
+- `serial-exec.py` and the checksummed Ansible transport are implemented, but
+  they cannot deliver a command if the link is dead.
+- Flashing, U-Boot recovery and the risky radio experiments stay blocked.
+- Configuration and monitoring continue over SSH (`eth0`).
+
+Next physical step: reopen the case, inspect the solder joints and the cable
+routing, and re-run `serial-tx-test.py --count 20` plus
+`playbook-e750-serial-check.yml`. Only a clean run unblocks flashing.
