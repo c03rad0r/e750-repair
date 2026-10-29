@@ -89,7 +89,7 @@ table ip bsbf_portal {
     type filter hook prerouting priority -140; policy accept;
     iifname "br-portal" meta mark & 0x00030000 == 0x00030000 \
       fib daddr type != local meta l4proto { tcp, udp } th dport != 53 \
-      tproxy to 127.0.0.1:12345 meta mark set 0x00030001
+      tproxy to :12345 meta mark set 0x00030001
   }
 }
 ```
@@ -101,8 +101,29 @@ table ip bsbf_portal {
 - the main `iifname "br-portal" return` stays, so pre-auth and non-TCP/UDP
   traffic never enters the tunnel.
 
+### What the live bring-up changed
+
+Three details only showed up on the device:
+
+1. **`tproxy to :12345`, not `tproxy to 127.0.0.1:12345`.** With the address
+   form, forwarded portal traffic matched the rule but the connection never
+   reached xray (HTTPS timed out, no xray outbound socket). The port-only form
+   preserves the original destination and works.
+2. **`route_localnet=1`** (`net.ipv4.conf.all` and `.default`) is required for
+   the tproxy redirect; it is persisted in
+   `/etc/sysctl.d/99-bsbf-tproxy.conf`.
+3. **The 4G backup was the preferred default route.** UCI said STA metric 9,
+   but the kernel route landed at 14 while the cellular route was 13, so the
+   throttled 4G won. The cellular metric is now 20 and `verify_bsbf` asserts
+   `sta < cell`.
+
+The rule also carries a `counter`, so the match can be observed without
+guessing.
+
 Verification: veth client on `br-portal` — pre-auth splash 200 and internet
-blocked; `ndsctl auth`; post-auth `curl ifconfig.me` = Hetzner IP.
+blocked; `ndsctl auth`; post-auth `curl https://1.1.1.1/cdn-cgi/trace` returns
+`ip=167.235.218.44` (the Hetzner BSBF server). Evidence:
+`evidence/portal/2026-10-29_portal-over-bond.txt`.
 
 ## Reproducibility contract
 
@@ -139,10 +160,12 @@ No provider snapshot. Everything must be rebuildable from a bare Debian 13:
 
 ### Phase 3 — TollGate over the bond
 
-- [ ] `bsbf_portal_tproxy` table + masked fwmark rule in the BSBF role.
-- [ ] veth client: pre-auth blocked, splash 200, post-auth egress = Hetzner IP.
-- [ ] Real phone + ecash payment; post-auth egress = Hetzner IP.
-- [ ] Memory/RSS measured; document the headroom and any fallback.
+- [x] `bsbf_portal_tproxy` table + masked fwmark rule in the BSBF role.
+- [x] veth client: pre-auth blocked, splash 200, post-auth egress = Hetzner IP.
+- [ ] Real phone + ecash payment; post-auth egress = Hetzner IP (payment
+      already works; re-check the egress from the phone).
+- [x] Memory/RSS measured: ~18 MB available, xray ~14% idle and up to ~71% under
+      load. Browsing works; the E750 is close to its CPU ceiling.
 
 ### Phase 4 — merge and record
 

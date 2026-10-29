@@ -1,0 +1,21 @@
+# TollGate over the BSBF bond — 2026-10-29
+
+## topology
+- 5 GHz phy2-ap0 TollGate-E750 -> br-portal 10.0.0.1
+- authenticated clients tproxied at priority -140 into BSBF
+- BSBF: container 167.235.218.44:16384 (EU), STA primary + 4G backup
+
+## config
+```text
+iifname "br-portal" ip daddr != 10.0.0.0/24 meta mark & 0x00030000 == 0x00030000 fib daddr type != local meta l4proto { tcp, udp } th dport != 53 counter tproxy to :12345 meta mark set 0x00030001
+ip rule: fwmark 0x1/0x1 lookup 1 priority 100
+routes: sta=14 cell=20 (STA preferred)
+```
+
+## veth client
+pre-auth splash: 200
+pre-auth trace: blocked
+post-auth trace: ip=167.235.218.44
+post-auth 443: 301 t=2.049449
+              total        used        free      shared  buff/cache   available
+Mem:         119796       57988       25284        2080       36524       17932

@@ -9,7 +9,9 @@ bsbf_sta_interface: "phy1-sta0"
 bsbf_cellular_interface: "wwan0"
 bsbf_cellular_uci: "wwan1"
 bsbf_wifi_metric: 9
-bsbf_cellular_metric: 13
+# The STA route lands at metric 14 after a DHCP renew, so a cellular metric of
+# 13 made the throttled 4G the preferred default route. Keep a safe margin.
+bsbf_cellular_metric: 20
 bsbf_backup_interfaces:
   - wwan0
 
@@ -17,6 +19,13 @@ bsbf_backup_interfaces:
 # tproxy. The captive portal's br-portal uses the normal WAN/NAT path.
 bsbf_tproxy_bypass_interfaces:
   - br-portal
+
+# Authenticated captive-portal clients are tproxied by a separate table at a
+# later hook priority (-140), after nodogsplash has marked them 0x30000. The
+# bypass above still keeps pre-auth and non-TCP/UDP traffic out of the tunnel.
+bsbf_portal_tproxy: true
+bsbf_portal_interface: "br-portal"
+bsbf_portal_network: "10.0.0.0/24"
 
 # Packages required for MBIM, MPTCP endpoint management, and the BSBF client.
 bsbf_packages:

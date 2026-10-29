@@ -176,6 +176,39 @@
   register: _bsbf_enable
   changed_when: true
 
+- name: Persist route_localnet for the tproxy
+  ansible.builtin.raw: |
+    set -e
+    cat > /etc/sysctl.d/99-bsbf-tproxy.conf <<'E750_SYSCTL_EOF'
+    net.ipv4.conf.all.route_localnet=1
+    net.ipv4.conf.default.route_localnet=1
+    E750_SYSCTL_EOF
+    sysctl -w net.ipv4.conf.all.route_localnet=1 >/dev/null
+    sysctl -w net.ipv4.conf.default.route_localnet=1 >/dev/null
+    cat /proc/sys/net/ipv4/conf/all/route_localnet
+  changed_when: true
+
+- name: Install the portal-over-bond helper
+  ansible.builtin.raw: |
+    set -e
+    mkdir -p /etc/bsbf
+    cat > /etc/bsbf/portal-tproxy.sh <<'E750_PORTAL_EOF'
+    {{ lookup('file', 'portal-tproxy.sh') }}
+    E750_PORTAL_EOF
+    chmod 755 /etc/bsbf/portal-tproxy.sh
+  when: bsbf_portal_tproxy | bool
+
+- name: Route authenticated portal clients through BSBF
+  ansible.builtin.raw: |
+    modprobe nft_tproxy 2>/dev/null || true
+    BSBF_PORTAL_IFACE='{{ bsbf_portal_interface }}' \
+    BSBF_PORTAL_NETWORK='{{ bsbf_portal_network }}' \
+      /etc/bsbf/portal-tproxy.sh
+    nft list chain ip bsbf_portal prerouting | head -5
+  register: _bsbf_portal_tproxy
+  changed_when: true
+  when: bsbf_portal_tproxy | bool
+
 - name: Show the tproxy bypass
   ansible.builtin.raw: |
     nft list chain ip bsbf_bonding prerouting_mangle | head -8
