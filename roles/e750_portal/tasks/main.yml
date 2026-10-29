@@ -72,6 +72,42 @@
       echo "sta.ssid=$(uci -q get wireless.sta.ssid) sta.disabled=$(uci -q get wireless.sta.disabled)"
     changed_when: true
 
+  - name: Configure nodogsplash for br-portal (if installed)
+    ansible.builtin.raw: |
+      if [ -x /etc/init.d/nodogsplash ]; then
+        set -e
+        uci set nodogsplash.@nodogsplash[0].gatewayinterface='{{ e750_portal_bridge }}'
+        uci set nodogsplash.@nodogsplash[0].gatewayiprange='{{ e750_portal_ip }}/24'
+        uci set nodogsplash.@nodogsplash[0].gatewayaddress='{{ e750_portal_ip }}'
+        uci set nodogsplash.@nodogsplash[0].webroot='/etc/nodogsplash/htdocs'
+        uci set nodogsplash.@nodogsplash[0].splashpage='splash.html'
+        uci -q delete nodogsplash.@nodogsplash[0].authenticated_users || true
+        uci add_list nodogsplash.@nodogsplash[0].authenticated_users='allow to 0.0.0.0/0'
+        uci commit nodogsplash
+        echo "nodogsplash gateway=$(uci -q get nodogsplash.@nodogsplash[0].gatewayinterface) range=$(uci -q get nodogsplash.@nodogsplash[0].gatewayiprange)"
+      else
+        echo "nodogsplash not installed; skipping"
+      fi
+    changed_when: true
+
+  - name: Configure the TollGate portal uhttpd (if installed)
+    ansible.builtin.raw: |
+      if [ -d /etc/tollgate/tollgate-captive-portal-site ]; then
+        set -e
+        uci set uhttpd.portal=uhttpd
+        uci -q delete uhttpd.portal.listen_http || true
+        uci set uhttpd.portal.listen_http='0.0.0.0:2051'
+        uci add_list uhttpd.portal.listen_http='[::]:2051'
+        uci set uhttpd.portal.home='/etc/tollgate/tollgate-captive-portal-site'
+        uci set uhttpd.portal.rfc1918_filter='0'
+        uci set uhttpd.portal.no_dirlists='1'
+        uci commit uhttpd
+        echo "portal uhttpd configured on :2051"
+      else
+        echo "TollGate portal site not installed; skipping"
+      fi
+    changed_when: true
+
   - name: Arm the watchdog
     ansible.builtin.raw: |
       setsid sh -c '
@@ -102,6 +138,23 @@
       echo reloaded
     changed_when: true
     failed_when: false
+
+  - name: Start the portal services
+    ansible.builtin.raw: |
+      if [ -x /etc/init.d/nodogsplash ]; then
+        /etc/init.d/nodogsplash enable
+        /etc/init.d/nodogsplash restart || true
+      fi
+      /etc/init.d/uhttpd enable 2>/dev/null || true
+      /etc/init.d/uhttpd restart 2>/dev/null || true
+      if [ -x /etc/init.d/tollgate-wrt ]; then
+        /etc/init.d/tollgate-wrt enable
+        /etc/init.d/tollgate-wrt start || true
+      fi
+      sleep 4
+      echo "--- portal processes ---"
+      ps w | grep -E '[n]odogsplash|[t]ollgate|[u]httpd' | head -5 || true
+    changed_when: true
 
   - name: Verify the portal and the untouched management link
     ansible.builtin.raw: |

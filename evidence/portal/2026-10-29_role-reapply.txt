@@ -1,0 +1,8 @@
+# Portal role re-apply — 2026-10-29
+
+- re-applied roles/e750_portal with the new nodogsplash/uhttpd/tollgate tasks
+- br-portal 10.0.0.1, AP TollGate-E750 ch11, STA connected, BSBF endpoints backup
+- splash 2050=200, portal 2051=200
+- pre-auth ping blocked; ndsctl auth; post-auth ping 2/2; HTTP 301
+- TollGate network_ok/running/wallet_ok; bypass iifname br-portal return
+- change confirmed (watchdog disarmed)

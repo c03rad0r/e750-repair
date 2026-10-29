@@ -27,6 +27,10 @@ the management LAN and the portal shared `br-lan`.
 - Portal SPA at `http://10.0.0.1:2051/splash.html` returns **200**; a real
   client gets **200** from the splash at :2050 (the earlier 500 was a request
   from the gateway itself).
+- `roles/e750_portal` now configures the nodogsplash gateway/range/address and
+  the `allow to 0.0.0.0/0` rule, configures the portal uhttpd on :2051, and
+  enables/starts `nodogsplash`, `uhttpd` and `tollgate-wrt`. A re-apply was
+  tested end-to-end; evidence `evidence/portal/2026-10-29_role-reapply.txt`.
 
 ### Client flow (veth client)
 
@@ -81,11 +85,9 @@ LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-portal-r
 
 1. Test from a phone/real client: association, DHCP lease, splash, payment
    flow, post-auth HTTP, logout.
-2. Fold the nodogsplash/uhttpd portal settings into `roles/e750_portal` so a
-   re-apply is fully reproducible.
-3. Add the portal packages/config to the image (or document it as a runtime
-   role).
-4. 24 h combined soak; then update the tracker and image.
+2. Add the portal packages/config to the image (or document it as a runtime
+   role; `tollgate-wrt` is not in the official OpenWrt feed).
+3. 24 h combined soak; update the tracker and image.
 
 ## Caveats
 
