@@ -27,6 +27,29 @@ Do **not** re-run this on the E750 as-is. Use one of:
 3. **Two-radio device / repaired 5 GHz** (portal on one radio, STA on the
    other) for production.
 
+## 4G WAN + AP-only attempt (2026-10-29)
+
+A second topology was applied: `br-lan` with `eth0` + `phy1-ap0`, AP-only
+(`wireless.sta.disabled=1`), and 4G as `network.wwan` (MBIM), with a 600 s
+watchdog.
+
+After the reload, `eth0`/`br-lan` 192.168.8.1 was unreachable from the
+controller. The AP SSID was still visible in a scan, but the portal/LAN had no
+reachable IP. TollGate was **not** started; this was a network-reconfiguration
+failure, not a TollGate run. The watchdog restored the config after 600 s and
+access returned; BSBF was re-applied and verified.
+
+Evidence: `evidence/tollgate/2026-10-29_4g-aponly-attempt.txt`.
+
+**Do not retry this sequence without a reliable serial console or a separate
+management interface.** The safer next design is:
+
+- keep `eth0` as the management LAN (`192.168.8.1`);
+- create a separate `br-portal` (`10.0.0.1`) containing only `phy1-ap0`;
+- set `nodogsplash.gatewayinterface=br-portal` and DHCP for the portal;
+- use 4G as the WAN;
+- test with serial attached and a watchdog.
+
 ## Usage (controlled test only)
 
 Copy the two scripts to the router and run:

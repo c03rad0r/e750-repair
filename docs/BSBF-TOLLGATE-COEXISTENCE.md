@@ -120,7 +120,15 @@ Evidence: `evidence/tollgate/2026-10-29_standalone-attempt.txt`.
 
 ### 2c. Alternative topologies (if AP+STA is too slow)
 
-- [ ] 4G WAN + AP (clean radio, but ~0.5 Mbps).
+- [x] **4G WAN + AP-only attempted (2026-10-29).** Applied `br-lan` (eth0 + AP),
+      AP-only, 4G as `network.wwan`, with a 600 s watchdog. After the reload
+      `eth0`/`br-lan` was unreachable; the AP was visible but had no reachable
+      LAN IP. TollGate was not started. The watchdog restored the config and
+      BSBF was re-applied. Evidence
+      `evidence/tollgate/2026-10-29_4g-aponly-attempt.txt`.
+- [ ] Retry with **separate management and portal bridges**: eth0 stays
+      `192.168.8.1`, `br-portal` 10.0.0.1 holds only the AP, 4G WAN,
+      `nodogsplash.gatewayinterface=br-portal`, serial attached.
 - [ ] Ethernet as WAN + AP (best backhaul, loses the LAN port; verify the single
       PHY can be reassigned in software).
 - [ ] Record the measured trade-off in the docs.

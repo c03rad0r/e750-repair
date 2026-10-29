@@ -254,8 +254,15 @@ handler that would recreate both.
       did not return; mint probes timed out and the kernel killed processes
       under memory pressure. Rolled back; BSBF healthy. Evidence
       `evidence/tollgate/2026-10-29_standalone-attempt.txt`.
-- [ ] Next TollGate topology: **4G WAN + AP-only** (no STA), then Ethernet
-      WAN + AP-only, then two-radio/5 GHz. Phase 3 (combined) stays blocked.
+- [x] 4G WAN + AP-only attempted: `br-lan` (eth0 + AP), AP-only, 4G as
+      `network.wwan`, watchdog. After reload eth0/br-lan was unreachable; the
+      AP was visible but had no LAN IP. TollGate was not started; the watchdog
+      restored the config and BSBF was re-applied. Evidence
+      `evidence/tollgate/2026-10-29_4g-aponly-attempt.txt`.
+- [ ] Retry with separate management (`eth0` 192.168.8.1) and portal
+      (`br-portal` 10.0.0.1 + AP) bridges, 4G WAN, serial attached.
+- [ ] Then Ethernet WAN + AP-only, then two-radio/5 GHz. Phase 3 (combined)
+      stays blocked.
 - [ ] Revisit the 5 GHz repair separately; it is not a prerequisite for AP+STA.
 
 ## Phase 9 — monitoring, acceptance, and final merge
