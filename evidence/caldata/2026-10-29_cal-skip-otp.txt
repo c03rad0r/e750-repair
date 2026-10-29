@@ -1,0 +1,10 @@
+# cal-pci + skip_otp — 2026-10-29
+
+- installed art 0x5000/0x440 as cal-pci-0000:00:00.0.bin (header 44 08 1b a8 04 01, MAC ...:3a)
+- kept ath10k skip_otp=1 boot hook; rebooted
+- 5 GHz phy2-ap0 TollGate-E750 ch36/VHT80 remained AP-ENABLED; 2.4 GHz STA + BSBF intact
+- dmesg still shows EEPROM -22; no evidence the cal file is used with skip_otp
+- removed cal-pci; rebooted; 5 GHz AP still works with skip_otp alone (role-reproducible)
+- final health RESULT OK; 5 GHz AP + 2.4 STA; BSBF enabled
+
+Conclusion: cal-pci + skip_otp did not show a measurable calibration benefit; keep the role skip_otp-only and the cal file out of the public image.

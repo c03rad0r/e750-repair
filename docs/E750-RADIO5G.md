@@ -56,7 +56,9 @@ Evidence: `evidence/caldata/2026-10-29_skip-otp-boot.txt`.
 
 - [ ] Real 5 GHz client: association, DHCP, splash, payment, post-auth, logout.
 - [ ] Throughput/CPU with 5 GHz portal + 2.4 GHz BSBF.
-- [ ] Try `cal-pci` + `skip_otp` to restore per-device calibration/stability.
+- [x] `cal-pci` + `skip_otp` tried: AP stayed up, but no evidence the cal file
+      was used and dmesg still showed EEPROM `-22`; removed it. `skip_otp` alone
+      is the reproducible path.
 - [ ] Decide on persistence (boot script vs U-Boot `bootargs`); current hook is
       installed by the role.
 - [ ] Add ath10k boot hook/radio1 defaults to the image or a first-boot script.

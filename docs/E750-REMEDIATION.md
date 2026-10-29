@@ -4,7 +4,7 @@ Status: **5 GHz portal AP + BSBF/TollGate combined working; remaining items are
 hardware/decision-gated.** PRs #1–#31 are merged on `main` at `3bff0a5`. The
 QCA9887 now runs as an uncalibrated 5 GHz portal AP via `skip_otp=1`; the 2.4
 GHz radio is the STA/BSBF backhaul. Serial has a checksummed exec channel (raw
-link 96/100). A clean 24 h soak started `2026-10-29T17:09:40Z`. Remaining:
+link 96/100). A clean 24 h soak started `2026-10-29T17:17:45Z`. Remaining:
 real 5 GHz client/payment, calibration/OTP, EU server, 4G plan, image.
 
 ## Execution log

@@ -60,3 +60,14 @@ insmod /lib/modules/$(uname -r)/ath10k_pci.ko
 - `wireless.radio1.disabled=1` was used during rollback; it is now enabled via
   the boot hook `ath10k-skip-otp` (START=19), which loads `skip_otp=1` before
   wifi starts.
+
+
+## cal-pci + skip_otp
+
+Installed the art `0x5000`/`0x440` blob as
+`cal-pci-0000:00:00.0.bin` with the boot hook still loading `skip_otp=1` and
+rebooted. The 5 GHz AP remained AP-ENABLED and 2.4 GHz/BSBF stayed healthy, but
+dmesg still reported the EEPROM `-22` and there was no evidence the cal file was
+used. Removed the cal file and rebooted: the 5 GHz AP still works with
+`skip_otp` alone. Keep the role skip_otp-only; the cal file is not in the public
+image. Evidence: `evidence/caldata/2026-10-29_cal-skip-otp.txt`.
