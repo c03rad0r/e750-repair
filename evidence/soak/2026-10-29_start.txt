@@ -1,0 +1,12 @@
+# E750 24 h soak — start 2026-10-29T10:16:01Z
+
+controller: x280
+log: ~/e750-soak/20261029T101523Z.log
+command: e750-soak.sh 24 300 (288 samples, 5 min interval)
+
+## process
+c08r4d0r 2417506       1  0 11:15 ?        00:00:00 sh /home/c08r4d0r/e750-repair/scripts/e750-soak.sh 24 300
+
+## log so far
+# e750 soak start 2026-10-29T10:15:23Z samples=288 interval=300s
+2026-10-29T10:15:23Z rc=0

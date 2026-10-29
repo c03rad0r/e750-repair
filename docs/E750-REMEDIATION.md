@@ -241,10 +241,28 @@ handler that would recreate both.
       `playbook-e750-monitor.yml`). Live: two `OK` samples.
       Evidence `evidence/monitor/2026-10-29_cron-health.txt`; docs
       `docs/E750-MONITOR.md`. PR #10 merged.
-- [ ] 24 h soak + reboot + failover + throughput evidence.
-- [ ] Update `STATUS.md`, `README.md`, docs, and this checklist.
-- [ ] Confirm every change is on `main` via PR; no unmerged branches.
-- [ ] Final audit: no secrets, no private keys, no art dumps in the public repo.
+- [x] Add `scripts/e750-soak.sh` (controller-side, read-only; 288 samples over
+      24 h) and start the soak on x280 at `2026-10-29T10:15:23Z`. Evidence
+      `evidence/soak/2026-10-29_start.txt`; live log
+      `~/e750-soak/20261029T101523Z.log` on x280.
+- [ ] Complete the 24 h soak; then reboot + cold-boot + failover + throughput
+      evidence (the last three are already captured, the soak is the long pole).
+- [x] Update `STATUS.md` and `README.md` for the cal-only result, the ops roles,
+      and the current board-ID/EEPROM/OTP lead.
+- [x] Confirm every change is on `main` via PR; no unmerged branches.
+- [x] Final audit: no secrets, no private keys, no art dumps in the public repo
+      (see the audit below).
+
+## Final audit (2026-10-29)
+
+- Tracked-file scan: no private keys, no WiFi PSK, no BSBF UUID, no art/cal
+  dumps. The private backup stays in `~/.local/share` on x280; the ImageBuilder
+  work tree (including its local signing key) is gitignored.
+- Test suite: `python3 -m pytest -q` passes (see the PR log).
+- All changes are merged to `main` via PRs #1–#13; no open PRs.
+- Remaining work is physical/decision-gated: serial adapter swap/reflow, Aldi
+  Talk plan, EU BSBF server, board-ID/EEPROM/OTP experiments, and the 24 h soak
+  result.
 
 ## Acceptance criteria for every PR
 

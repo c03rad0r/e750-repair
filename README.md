@@ -7,19 +7,21 @@ console — reproducibly, as Ansible, so any context window or machine can do it
 >
 > This repo was written during an active diagnosis and **its central claim is
 > unverified**. The theory that installing missing QCA9887 calibration data revives
-> the dead 5 GHz radio **did not fix the radio**. Worse, placing the files **changed
-> the failure**: a `failed to get board id: -122` line now appears that is absent
-> from every pre-install boot log.
+> the dead 5 GHz radio **did not fix the radio**. A one-variable follow-up
+> (2026-10-29) showed that the earlier `failed to get board id: -122` was caused
+> by the `pre-cal-*` file: installing **only** `cal-pci-*.bin`, with no
+> `pre-cal-*`, produces **no `-122`** and leaves the original `-22`
+> EEPROM/board-id failure. See [`docs/CALDATA-CAL-ONLY.md`](docs/CALDATA-CAL-ONLY.md).
 >
 > An earlier version of this README argued from the log ordering that "calibration
 > cannot be the cause". **That argument has been retracted as invalid** — the two
 > lines come from different driver calls with independent base errors, so their
 > order proves nothing. See STATUS.md.
 >
-> **Do not treat the `caldata` role as a fix.** Its side effects are not yet
-> understood, and it is itself the current lead. What IS solid and reusable here:
-> the serial transport plugin, the verify role that refuses to report a false pass,
-> and the measured troubleshooting notes.
+> **Do not treat the `caldata` role as a fix.** The cal file alone is not
+> sufficient; the current lead is the board-ID/EEPROM/OTP path (`bmi_id N/A`).
+> What IS solid and reusable here: the serial transport plugin, the verify role
+> that refuses to report a false pass, and the measured troubleshooting notes.
 
 The radio repair itself remains **unsolved**.
 
@@ -33,6 +35,21 @@ measured link is ~0.5 Mbps; the STA path carries ~22 Mbps. See
 
 This does **not** change the radio-repair verdict above; it is a separate,
 additive role and playbook.
+
+## Operations roles (all merged as IaC)
+
+| Area | Doc | What it does |
+|---|---|---|
+| Client/server bonding | [`docs/BSBF-BONDING.md`](docs/BSBF-BONDING.md), [`docs/BSBF-SERVER.md`](docs/BSBF-SERVER.md) | MPTCP/xray client + server, failover |
+| 4G diagnostics | [`docs/E750-MODEM-DIAG.md`](docs/E750-MODEM-DIAG.md) | read-only AT/MBIM signal/APN report |
+| Serial reliability | [`docs/SERIAL-RELIABILITY.md`](docs/SERIAL-RELIABILITY.md) | TX test, loopback, cold-joint/continuity runbook |
+| Access | [`docs/E750-ACCESS.md`](docs/E750-ACCESS.md) | Dropbear operator keys |
+| Network + health | [`docs/E750-NETWORK-HEALTH.md`](docs/E750-NETWORK-HEALTH.md) | WAN zone cleanup, critical check |
+| Monitoring | [`docs/E750-MONITOR.md`](docs/E750-MONITOR.md) | 5-minute cron health log + syslog |
+| Clean image | [`docs/E750-IMAGE.md`](docs/E750-IMAGE.md) | pinned 25.12.5 ImageBuilder recipe (build only) |
+| MCU/OLED | [`docs/E750-MCU.md`](docs/E750-MCU.md) | protocol investigation; daemon deferred |
+| TollGate | [`docs/E750-TOLLGATE.md`](docs/E750-TOLLGATE.md) | v0.6.0 evaluated; no-go on this unit |
+| Tracker | [`docs/E750-REMEDIATION.md`](docs/E750-REMEDIATION.md) | phases, checklist, execution log |
 
 ---
 

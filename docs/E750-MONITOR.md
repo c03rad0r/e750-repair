@@ -71,31 +71,57 @@ ssh x280 'ssh -i ~/.ssh/id_ed25519 root@192.168.8.1 \
 
 ## 24 h soak
 
-Start it after the monitor is installed and the serial adapter is stable:
+Use the controller-side harness (run on x280). It is read-only and records one
+line per sample: UTC time, `rc=0` or the failing checks, or `ssh_failed`.
 
-```sh
-# on x280, collect one sample per minute for 24 h without touching the router
-mkdir -p ~/e750-soak
-nohup sh -c 'for i in $(seq 1440); do
-  date -u +%Y-%m-%dT%H:%M:%SZ >> ~/e750-soak/soak.log
-  ssh -o BatchMode=yes -i ~/.ssh/id_ed25519 root@192.168.8.1 \
-    "/usr/bin/e750-health --quiet; echo rc=\$?" >> ~/e750-soak/soak.log 2>&1
-  sleep 60
-done' >/dev/null 2>&1 &
+```bash
+ssh x280
+cd ~/e750-repair
+# 288 samples over 24 h, one every 5 minutes
+setsid nohup sh scripts/e750-soak.sh 24 300 \
+  > ~/e750-soak/run.out 2>&1 < /dev/null &
 ```
 
-The device-side cron log is enough for a pass/fail timeline; the controller-side
-loop adds an independent view (SSH reachability and egress). Review with:
+The harness writes `~/e750-soak/<timestamp>.log` and ends with:
 
-```sh
-grep -c ' OK$' /tmp/e750-health.log        # on the E750
-grep -c 'FAIL' /tmp/e750-health.log        # on the E750
-grep -c 'rc=0' ~/e750-soak/soak.log        # on x280
+```text
+# e750 soak end <time> ok=<n> fail=<n> total=<n>
 ```
 
-Acceptance: no unexplained `FAIL`, egress stays the BSBF server, both WANs stay
-up, and a deliberate STA-drop failover still recovers. Do not run the soak
-during a firmware experiment.
+A short self-test (no effect on the device) is:
+
+```bash
+SAMPLES=2 INTERVAL=1 OUT=/tmp/soak-test.log sh scripts/e750-soak.sh 0 1
+```
+
+### Started (2026-10-29)
+
+```text
+# e750 soak start 2026-10-29T10:15:23Z samples=288 interval=300s
+2026-10-29T10:15:23Z rc=0
+```
+
+Process and the first sample are recorded in
+`evidence/soak/2026-10-29_start.txt`; the live log is
+`~/e750-soak/20261029T101523Z.log` on x280. The device-side cron log
+(`/tmp/e750-health.log`) is the independent view.
+
+Review with:
+
+```sh
+grep -c 'rc=0' ~/e750-soak/20261029T101523Z.log     # on x280
+grep -c 'FAIL\|ssh_failed' ~/e750-soak/20261029T101523Z.log
+```
+
+Acceptance: no unexplained `FAIL`/`ssh_failed`, egress stays the BSBF server,
+both WANs stay up, and a deliberate STA-drop failover still recovers. Do not run
+the soak during a firmware experiment.
+
+Stop it early with:
+
+```sh
+pkill -f 'e750-soak.sh 24 300'
+```
 
 ## Scope and caveats
 

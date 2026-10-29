@@ -22,8 +22,10 @@ from the factory `art` partition, and that installing it fixes the radio.
 1. The calibration files were installed, byte-verified, in the correct directory,
    under both names ath10k probes for.
 2. The radio **still failed**.
-3. But the failure **changed**: a `failed to get board id: -122` line appeared that
-   is not present in any pre-install boot log. That is the current lead.
+3. The earlier `failed to get board id: -122` was traced to the `pre-cal-*` file.
+   Installing **only** `cal-pci-*` produces no `-122`, but the original `-22`
+   remains and the radio still does not come up. The current lead is the
+   board-ID/EEPROM/OTP path (`bmi_id N/A`). See the 2026-10-29 section below.
 
 ### RETRACTED: "the ordering is decisive"
 
@@ -79,7 +81,7 @@ are not yet understood.
 |---|---|
 | The device **boots correctly** — this was never a boot failure | Full boot log captured twice; reaches `root@OpenWrt:~#`. Kernel verifies its own checksum, squashfs mounts, UBIFS recovers, `procd` starts. |
 | `192.168.1.1` unreachable is **not a fault** | `br-lan: <NO-CARRIER,...> state DOWN`. The address `192.168.1.1/24` is configured correctly; the port simply has no link. |
-| The 5 GHz QCA9887 **fails on every boot** | Pre-install boots: `failed to read device EEPROM at 0000`, `failed to read calibration data from EEPROM: -22`, `could not init core (-22)`. Post-install boots add `failed to get board id: -122`. See EVIDENCE §3 for the two signatures side by side. |
+| The 5 GHz QCA9887 **fails on every boot** | Pre-install and cal-only boots: `failed to read device EEPROM at 0000`, `failed to read calibration data from EEPROM: -22`, `could not init core (-22)`. The `-122` seen in the older both-files experiment came from the `pre-cal-*` file and is absent when only `cal-pci-*` is installed. See EVIDENCE §3. |
 | The `-122` appears **only after** the caldata files were placed | `grep -c -- '-122'`: pre-install log `ttyUSB3.log` = **0**; post-install `poweron2/ttyUSB3.log` and `reboot_trigger.log` = **1** each. |
 | `-122` cannot be an ath10k-generated errno | `-EDQUOT` does not occur anywhere in the ath10k driver; it surfaces from `ath10k_bmi_execute()`'s response `result` field. |
 | The factory `art` partition **does contain** QCA9887-shaped data at `0x5000` | `44 08 1b a8 04 01` header, MAC `94:83:c4:4d:fc:3a` (consecutive with the 2.4 GHz MAC). Whether it is *valid for this radio* is **unproven**. |
