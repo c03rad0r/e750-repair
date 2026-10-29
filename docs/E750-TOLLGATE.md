@@ -1,8 +1,10 @@
 # TollGate on the E750 — evaluation
 
-Status: **evaluated, no-go for this unit** (2026-10-29). The E750 stays a BSBF
-bonded-WAN client. This is a role/conflict decision, not a statement that the
-package is broken.
+Status: **evaluated; revised 2026-10-29.** Standalone TollGate on the E750 is
+**feasible** with a 2.4 GHz AP+STA configuration. The earlier "no-go" applies
+only to running BSBF and TollGate **simultaneously** on this unit without a
+tested zone/tproxy design. See
+[`BSBF-TOLLGATE-COEXISTENCE.md`](BSBF-TOLLGATE-COEXISTENCE.md).
 
 ## Artifact check (v0.6.0)
 
@@ -17,8 +19,9 @@ TollGate publishes a package for exactly this target family:
 | Individual package | `tollgate-wrt_0.6.0_mips_24kc-ath79-nand.apk` (8.9 MB) |
 | Bundle | 37 packages, including `nodogsplash 5.0.2`, `iptables-nft`, `jq`, `libmicrohttpd-no-ssl`, iptables/kmod modules for kernel 6.12.94 |
 
-So installation is technically possible; the blocker is what TollGate does to
-the device's role and network stack.
+So installation is technically possible. The 5 GHz radio being dead does **not**
+block AP+STA: ath9k supports an AP and a STA vif on the same 2.4 GHz channel. The
+hard part is coexistence with BSBF, not TollGate itself.
 
 Evidence: `evidence/tollgate/2026-10-29_asset-check.txt`.
 
@@ -36,15 +39,15 @@ The flash fits. The CPU/RAM headroom is the concern: BSBF + xray + the 4G MBIM
 stack already run on a single 650 MHz MIPS 24Kc core, and the monitor shows load
 around 0.1–1.0.
 
-## Why no-go now
+## Why simultaneous BSBF + TollGate is no-go for now
 
 1. **Role conflict.** TollGate turns the router into a WiFi access point with a
    captive portal (`nodogsplash` on :2050, TollGate on :2121, admin/portal
    uhttpd). The E750's only working radio is the **2.4 GHz STA uplink** to
    `hermes-lan`; the AP is disabled and the LAN is plain `eth0` (no `br-lan`).
-   Enabling the AP needs the bridge migration that `roles/e750_network`
-   deliberately refuses, and AP+STA on one 2.4 GHz radio contends with the BSBF
-   path that currently carries ~17 Mbps.
+   AP+STA on one radio is feasible, but it contends with the BSBF path that
+   currently carries ~17 Mbps, and running both data planes needs a tested
+   zone/tproxy design.
 2. **Firewall/nftables overlap.** TollGate's offline bundle installs
    `iptables-nft`, `xtables-nft`, and a set of iptables/kmod modules. BSBF uses
    an nft `tproxy` table plus policy routing. Both can coexist in principle, but
@@ -57,15 +60,15 @@ around 0.1–1.0.
    nodogsplash, jq, uhttpd and the portal is unproven. The fleet's MT3000 class
    devices are the supported TollGate target and have far more headroom.
 
-## Decision
+## Decision (revised)
 
-- Keep the E750 as the BSBF client (`phy1-sta0` primary + `wwan0` backup).
-- Do **not** install TollGate on this unit.
-- If TollGate is wanted on the E750 later, the prerequisites are:
-  5 GHz repaired (AP+STA), a `br-lan` migration with rollback, a reliable serial
-  adapter, a full private backup, and a measured CPU/RAM/throughput test on a
-  spare unit — then use the `ath79-nand` offline bundle above and verify its
-  SHA256.
+- **Standalone TollGate is a go**: 2.4 GHz AP+STA (`phy1-ap0` + `phy1-sta0`),
+  `br-lan` with `eth0`, portal on the AP, STA as WAN. Test it with BSBF stopped.
+- **Simultaneous BSBF + TollGate is conditional**: only after the zone/tproxy
+  design and test matrix in
+  [`BSBF-TOLLGATE-COEXISTENCE.md`](BSBF-TOLLGATE-COEXISTENCE.md) pass.
+- Prerequisites for either: reliable serial recovery, a full private backup,
+  and a tested rollback. The 5 GHz repair is **not** a prerequisite for AP+STA.
 
 ## If someone proceeds anyway (not recommended)
 
@@ -76,5 +79,6 @@ around 0.1–1.0.
 4. Watch `top`, `free`, and the 2.4 GHz STA throughput; roll back if BSBF is
    needed again.
 
-This is intentionally not automated in the repo. TollGate belongs on a
-supported AP-class device, not on the bonded-WAN E750.
+The standalone and combined modes are tracked as IaC in this repo; the first
+step is the AP+STA/`br-lan` role, then the standalone TollGate role, then the
+combined mode. Do not combine them before each mode has a tested rollback.

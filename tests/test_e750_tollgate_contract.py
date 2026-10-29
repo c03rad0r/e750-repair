@@ -13,6 +13,7 @@ def read(path: str) -> str:
 
 def test_docs_and_evidence_exist() -> None:
     assert (ROOT / "docs/E750-TOLLGATE.md").is_file()
+    assert (ROOT / "docs/BSBF-TOLLGATE-COEXISTENCE.md").is_file()
     assert (ROOT / "evidence/tollgate/2026-10-29_asset-check.txt").is_file()
 
 
@@ -27,15 +28,38 @@ def test_evaluation_records_the_real_artifact_and_checksum() -> None:
 
 def test_decision_is_explicit_and_reversible() -> None:
     doc = read("docs/E750-TOLLGATE.md")
-    assert "no-go for this unit" in doc
-    assert "Keep the E750 as the BSBF client" in doc
+    assert "Standalone TollGate is a go" in doc
+    assert "Simultaneous BSBF + TollGate is conditional" in doc
+    assert "2.4 GHz AP+STA" in doc
     assert "If someone proceeds anyway" in doc
     assert "scripts/e750-backup.sh" in doc
     assert "serial console" in doc
 
 
+def test_coexistence_plan_has_the_separate_first_checklist() -> None:
+    plan = read("docs/BSBF-TOLLGATE-COEXISTENCE.md")
+    for needle in (
+        "Phase 0",
+        "Phase 1 — BSBF standalone",
+        "Phase 2 — TollGate standalone",
+        "Phase 3 — Combine",
+        "Phase 4 — MCU",
+        "Implementation queue",
+        "br-lan",
+        "phy1-ap0",
+        "tested rollback",
+    ):
+        assert needle in plan, needle
+    # The plan must not promise a combined mode before the standalone tests.
+    assert plan.index("Phase 2 — TollGate standalone") < plan.index("Phase 3 — Combine")
+
+
 def test_no_secrets_or_psk() -> None:
-    for path in ("docs/E750-TOLLGATE.md", "evidence/tollgate/2026-10-29_asset-check.txt"):
+    for path in (
+        "docs/E750-TOLLGATE.md",
+        "docs/BSBF-TOLLGATE-COEXISTENCE.md",
+        "evidence/tollgate/2026-10-29_asset-check.txt",
+    ):
         text = read(path)
         assert "PRIVATE KEY" not in text
         assert ("c03rad0r" + "123") not in text
