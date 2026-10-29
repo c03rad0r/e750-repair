@@ -8,8 +8,10 @@ trusting anything else in it.
 > **BSBF bonding is a separate workstream (2026-10-28).** The E750 also runs a
 > BSBF MPTCP client with 4G + a 2.4 GHz STA WAN; see
 > [`docs/BSBF-BONDING.md`](docs/BSBF-BONDING.md) and
-> [`docs/BSBF-SERVER.md`](docs/BSBF-SERVER.md). It does not change the
-> radio-repair verdict in this file. The 5 GHz radio remains dead.
+> [`docs/BSBF-SERVER.md`](docs/BSBF-SERVER.md). The 5 GHz radio is now a
+> **skip_otp portal AP** (no per-device calibration); see
+> [`docs/E750-RADIO5G.md`](docs/E750-RADIO5G.md). The radio is not fully
+> production-calibrated.
 
 ## ⚠️ The central claim is UNVERIFIED — and it is now the SECOND-most interesting thing here
 
@@ -54,7 +56,16 @@ of the two boot signatures.
 from the target firmware through `ath10k_bmi_execute()`, not an errno the driver
 produced. Treating it as a driver-level error is a trap; see EVIDENCE §3.
 
-### 2026-10-29 — cal-only result (new)
+### 2026-10-29 — 5 GHz `skip_otp` result (new)
+
+Loading `ath10k_core` with `skip_otp=1` (via the `/etc/init.d/ath10k-skip-otp`
+boot hook) bypasses the OTP `-22` failure. The QCA9887 initializes and serves a
+**5 GHz portal AP** (`phy2-ap0`, `TollGate-E750`, ch36/VHT80, txpower 10) on
+`br-portal` 10.0.0.1; the 2.4 GHz radio is the STA/BSBF backhaul. Cold boot and
+health are verified. This is **without per-device calibration**, so it is not
+production-validated. See `docs/E750-RADIO5G.md`.
+
+### 2026-10-29 — cal-only result
 
 Installed **only** `cal-pci-0000:00:00.0.bin` (no `pre-cal-*`, no hotplug),
 rebooted, and read the device back:
@@ -81,7 +92,7 @@ are not yet understood.
 |---|---|
 | The device **boots correctly** — this was never a boot failure | Full boot log captured twice; reaches `root@OpenWrt:~#`. Kernel verifies its own checksum, squashfs mounts, UBIFS recovers, `procd` starts. |
 | `192.168.1.1` unreachable is **not a fault** | `br-lan: <NO-CARRIER,...> state DOWN`. The address `192.168.1.1/24` is configured correctly; the port simply has no link. |
-| The 5 GHz QCA9887 **fails on every boot** | Pre-install and cal-only boots: `failed to read device EEPROM at 0000`, `failed to read calibration data from EEPROM: -22`, `could not init core (-22)`. The `-122` seen in the older both-files experiment came from the `pre-cal-*` file and is absent when only `cal-pci-*` is installed. See EVIDENCE §3. |
+| The 5 GHz QCA9887 **fails on a normal boot** | Pre-install/cal-only boots: `failed to read device EEPROM at 0000`, `failed to read calibration data from EEPROM: -22`, `could not init core (-22)`. With `skip_otp=1` it initializes as an uncalibrated AP; see `docs/E750-RADIO5G.md`. The `-122` was a `pre-cal-*` artifact. |
 | The `-122` appears **only after** the caldata files were placed | `grep -c -- '-122'`: pre-install log `ttyUSB3.log` = **0**; post-install `poweron2/ttyUSB3.log` and `reboot_trigger.log` = **1** each. |
 | `-122` cannot be an ath10k-generated errno | `-EDQUOT` does not occur anywhere in the ath10k driver; it surfaces from `ath10k_bmi_execute()`'s response `result` field. |
 | The factory `art` partition **does contain** QCA9887-shaped data at `0x5000` | `44 08 1b a8 04 01` header, MAC `94:83:c4:4d:fc:3a` (consecutive with the 2.4 GHz MAC). Whether it is *valid for this radio* is **unproven**. |

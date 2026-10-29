@@ -5,13 +5,16 @@ console — reproducibly, as Ansible, so any context window or machine can do it
 
 > ## ⚠️ READ [`STATUS.md`](STATUS.md) FIRST
 >
-> This repo was written during an active diagnosis and **its central claim is
-> unverified**. The theory that installing missing QCA9887 calibration data revives
-> the dead 5 GHz radio **did not fix the radio**. A one-variable follow-up
-> (2026-10-29) showed that the earlier `failed to get board id: -122` was caused
-> by the `pre-cal-*` file: installing **only** `cal-pci-*.bin`, with no
-> `pre-cal-*`, produces **no `-122`** and leaves the original `-22`
-> EEPROM/board-id failure. See [`docs/CALDATA-CAL-ONLY.md`](docs/CALDATA-CAL-ONLY.md).
+> This repo was written during an active diagnosis. The calibration-data theory
+> **did not fix the radio**: installing only `cal-pci` leaves the original `-22`
+> EEPROM/board-id failure. The working path is different: ath10k loaded with
+> **`skip_otp=1`** initializes the QCA9887, and it now serves the **5 GHz portal
+> AP** (ch36/VHT80, txpower 10). See [`docs/E750-RADIO5G.md`](docs/E750-RADIO5G.md).
+>
+> The radio runs **without per-device calibration**; this is not
+> production-validated. OTP/EEPROM/calibration remain open. The 2.4 GHz radio is
+> the STA/BSBF backhaul. See [`docs/CALDATA-CAL-ONLY.md`](docs/CALDATA-CAL-ONLY.md)
+> and [`STATUS.md`](STATUS.md).
 >
 > An earlier version of this README argued from the log ordering that "calibration
 > cannot be the cause". **That argument has been retracted as invalid** — the two
@@ -23,13 +26,15 @@ console — reproducibly, as Ansible, so any context window or machine can do it
 > What IS solid and reusable here: the serial transport plugin, the verify role
 > that refuses to report a false pass, and the measured troubleshooting notes.
 
-The radio repair itself remains **unsolved**.
+The 5 GHz radio now works as an **uncalibrated portal AP**; production
+calibration/OTP and a real-client validation remain open.
 
 ## BSBF bonding (separate workstream)
 
 The same unit also runs a **BSBF MPTCP client**: 4G (Aldi Talk) plus a 2.4 GHz
-STA to `hermes-lan`, with `eth0` as the LAN. The 4G is marked backup because the
-measured link is ~0.5 Mbps; the STA path carries ~22 Mbps. See
+STA to `hermes-lan`, with `eth0` as the management LAN. The 4G is marked backup
+because the measured link is ~0.5 Mbps; the STA path carries ~22 Mbps. The
+**5 GHz portal AP** is separate on `br-portal` 10.0.0.1. See
 [`docs/BSBF-BONDING.md`](docs/BSBF-BONDING.md) and the companion server role in
 [`docs/BSBF-SERVER.md`](docs/BSBF-SERVER.md).
 

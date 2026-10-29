@@ -37,7 +37,7 @@ def test_roadmap_records_the_current_combined_mode() -> None:
         "tproxy bypass",
         "HTTP 301",
         "24 h combined soak",
-        "2026-10-29T14:24:30Z",
+        "2026-10-29T17:09:40Z",
     ):
         assert needle in doc, needle
 
