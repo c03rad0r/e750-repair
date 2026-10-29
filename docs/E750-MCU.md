@@ -87,3 +87,30 @@ serial recovery.
 - No `gl-e750-mcu` package, no init script, and no image change.
 - Tracker: Phase 6 stays open until the probe returns a reply or a verified
   package is built.
+
+## Working driver (2026-10-30)
+
+The MCU is a **NUC029ZAN** on the console UART (`/dev/ttyS0`, 115200 8N1). It
+renders **predefined pages**; there is no free-text field. It reads one JSON
+object per line, e.g.:
+
+```json
+{ "ssid_5g": "TollGate-E750", "up_5g": "1", "key_5g": "",
+  "ssid": "TollGate-E750", "up": "0", "work_mode": "Router",
+  "lan_ip": "192.168.8.1", "method_nw": "repeater|standby",
+  "clients": "1", "clock": "00:00", "mcu_status": "1" }
+```
+
+A `mcu_status` query returns `{OK},<battery%>,<temp>,<charging>,<cycles>`; on
+this unit the reply was observed as `,1,10` (the console/login consumes the
+leading bytes).
+
+`scripts/e750-mcu-oled.sh` sends the current SSID, link mode, client count and
+clock every minute. "TollGate" appears via the SSID (`TollGate-E750`) and the
+bonding state via `method_nw`. There is **no way to print arbitrary text** such
+as a custom "TollGate" banner without changing the MCU firmware.
+
+Caveat: the MCU shares `ttyS0` with the console, so JSON and replies are
+interleaved with the login. To stop the driver, remove the cron entry
+(`/usr/bin/e750-mcu-oled.sh`). The stock `gl-e750-mcu` package is not in the
+OpenWrt feed; this shell driver is source-only and does not need it.

@@ -7,8 +7,8 @@ Scope: the six follow-ups from the bonding/portal review.
 - [ ] 3. Bake the runtime pieces into the image
 - [x] 4. Wire the serial checksum into Ansible (plugin + docs) — see commit
       `004cfea` on `pr/fleet-e750-batch`; end-to-end run blocked by the dead console
-- [ ] 5. Art-blob calibration experiment
-- [ ] 6. MCU/OLED discovery and a "TollGate" screen
+- [x] 5. Art-blob calibration experiment — negative; OTP is required, documented
+- [x] 6. MCU/OLED driver + "TollGate" via the SSID page (no free text in the MCU protocol)
 
 ## 1. Automatic standby/aggregate controller
 

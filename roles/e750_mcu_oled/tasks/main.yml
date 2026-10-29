@@ -1,0 +1,29 @@
+---
+- name: Install the OLED driver
+  ansible.builtin.raw: |
+    set -e
+    cat > /usr/bin/e750-mcu-oled.sh <<'E750_OLED_EOF'
+    {{ lookup('file', playbook_dir ~ '/scripts/e750-mcu-oled.sh') }}
+    E750_OLED_EOF
+    chmod 755 /usr/bin/e750-mcu-oled.sh
+    head -1 /usr/bin/e750-mcu-oled.sh
+  when: e750_mcu_oled_enabled | bool
+  changed_when: true
+
+- name: Install the OLED cron entry
+  ansible.builtin.raw: |
+    set -e
+    touch /etc/crontabs/root
+    grep -q 'e750-mcu-oled.sh' /etc/crontabs/root || \
+      echo '* * * * * /usr/bin/e750-mcu-oled.sh >/dev/null 2>&1' >> /etc/crontabs/root
+    /etc/init.d/cron restart >/dev/null 2>&1 || true
+    grep 'e750-mcu-oled' /etc/crontabs/root
+  when: e750_mcu_oled_enabled | bool
+  changed_when: true
+
+- name: Send the first frame
+  ansible.builtin.raw: |
+    /usr/bin/e750-mcu-oled.sh
+    echo sent
+  when: e750_mcu_oled_enabled | bool
+  changed_when: true

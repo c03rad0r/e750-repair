@@ -1,0 +1,6 @@
+---
+# OLED driver for the on-board MCU. The MCU shares /dev/ttyS0 with the console
+# and renders predefined pages from a JSON object; there is no free-text field.
+e750_mcu_oled_device: "/dev/ttyS0"
+e750_mcu_oled_interval: 60
+e750_mcu_oled_enabled: true
