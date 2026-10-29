@@ -35,12 +35,12 @@ def test_role_enables_and_persists_it() -> None:
     assert "portal-tproxy.sh" in boot
 
 
-def test_sta_is_the_preferred_default_route() -> None:
+def test_both_wan_routes_are_verified() -> None:
     defaults = read("roles/bsbf/defaults/main.yml")
-    assert "bsbf_cellular_metric: 20" in defaults
+    assert "bsbf_cellular_metric: 13" in defaults
     verify = read("roles/verify_bsbf/tasks/main.yml")
-    assert '"$sta" -lt "$cell"' in verify
-    assert "STA beats the cellular default route" in verify
+    assert "both WANs have a default route" in verify
+    assert "rotates the metrics" in verify
 
 
 def test_docs_and_evidence_record_the_result() -> None:
