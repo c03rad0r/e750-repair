@@ -1,0 +1,94 @@
+# E750 AP+STA / br-lan — live capture 2026-10-29T11:00:50Z
+
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Warning: Permanently added '192.168.8.1' (ED25519) to the list of known hosts.
+=== network ===
+network.lan=interface
+network.lan.device='br-lan'
+network.lan.proto='static'
+network.lan.ipaddr='192.168.8.1'
+network.lan.ip6assign='60'
+network.lan.netmask='255.255.255.0'
+network.brlan=device
+network.brlan.name='br-lan'
+network.brlan.type='bridge'
+network.brlan.ports='eth0'
+=== wireless (PSK redacted) ===
+wireless.radio0=wifi-device
+wireless.radio0.type='mac80211'
+wireless.radio0.path='platform/ahb/18100000.wmac'
+wireless.radio0.band='2g'
+wireless.radio0.htmode='HT20'
+wireless.radio0.country='DE'
+wireless.radio0.disabled='0'
+wireless.radio0.channel='11'
+wireless.radio0.beacon_int='100'
+wireless.radio0.dtim_period='2'
+wireless.default_radio0=wifi-iface
+wireless.default_radio0.device='radio0'
+wireless.default_radio0.network='lan'
+wireless.default_radio0.mode='ap'
+wireless.default_radio0.encryption='none'
+wireless.default_radio0.ssid='TollGate-E750'
+wireless.default_radio0.disabled='0'
+wireless.default_radio0.isolate='1'
+wireless.default_radio0.macaddr='02:83:c4:4d:fc:3b'
+wireless.sta=wifi-iface
+wireless.sta.device='radio0'
+wireless.sta.network='wwan'
+wireless.sta.mode='sta'
+wireless.sta.key='<redacted>'
+wireless.sta.disabled='0'
+wireless.sta.ssid='hermes-lan'
+wireless.sta.encryption='psk2'
+=== ip ===
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0             UP             
+wwan0            UNKNOWN        10.171.237.135/28 fe80::581f:d2ff:fefb:1c54/64 
+br-lan           UP             192.168.8.1/24 fd33:1825:ff29::1/60 fe80::9683:c4ff:fe4d:fc38/64 
+phy1-ap0         UP             
+phy1-sta0        UP             192.168.50.123/24 fe80::9683:c4ff:fe4d:fc39/64 
+=== iw dev ===
+	Interface phy1-sta0
+		addr 94:83:c4:4d:fc:39
+		ssid hermes-lan
+		channel 11 (2462 MHz), width: 20 MHz, center1: 2462 MHz
+	Interface phy1-ap0
+		addr 02:83:c4:4d:fc:3b
+		ssid TollGate-E750
+		channel 11 (2462 MHz), width: 20 MHz, center1: 2462 MHz
+=== ap info ===
+	addr 02:83:c4:4d:fc:3b
+	type AP
+	channel 11 (2462 MHz), width: 20 MHz, center1: 2462 MHz
+	txpower 20.00 dBm
+=== hostapd ===
+Thu Oct 29 10:59:57 2026 daemon.notice hostapd: handle_probe_req: send failed
+Thu Oct 29 10:59:57 2026 daemon.notice hostapd: handle_probe_req: send failed
+Thu Oct 29 10:59:57 2026 daemon.notice hostapd: handle_probe_req: send failed
+Thu Oct 29 10:59:57 2026 daemon.notice hostapd: handle_probe_req: send failed
+Thu Oct 29 11:00:21 2026 daemon.info hostapd: phy1-ap0: STA 50:76:af:2f:33:ed IEEE 802.11: authenticated
+Thu Oct 29 11:00:21 2026 daemon.info hostapd: phy1-ap0: STA 50:76:af:2f:33:ed IEEE 802.11: associated (aid 1)
+Thu Oct 29 11:00:21 2026 daemon.notice hostapd: phy1-ap0: AP-STA-CONNECTED 50:76:af:2f:33:ed auth_alg=open
+Thu Oct 29 11:00:21 2026 daemon.notice hostapd: phy1-ap0: AP-STA-DISCONNECTED 50:76:af:2f:33:ed
+=== health ===
+wwan0_rx_bytes=20522
+wwan0_tx_bytes=24487
+== WAN firewall zone ==
+firewall.@zone[0].name='lan'
+firewall.@zone[0].network='lan'
+firewall.@zone[1].name='wan'
+firewall.@zone[1].network='wwan' 'wwan1'
+RESULT OK
+
+## client scan (x280)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+	SSID: TollGate-E750
+	Supported rates: 6.0* 9.0 12.0* 18.0 24.0* 36.0 48.0 54.0 
+	DS Parameter set: channel 11
+
+## client association + ping (x280, static test IP, no default route)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+wlp59s0 (phy #0): connected to 02:83:c4:4d:fc:3b
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 1.638/2.641/3.644/1.003 ms

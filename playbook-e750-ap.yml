@@ -1,0 +1,18 @@
+---
+# Apply br-lan + AP+STA with a watchdog rollback. Run from x280:
+#
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-ap.yml
+#
+# The STA stays the uplink; the AP joins br-lan. The change is reversible until
+# confirmed with playbook-e750-ap-confirm.yml.
+
+- name: GL-E750 — br-lan + AP+STA
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Apply the AP role
+      ansible.builtin.include_role:
+        name: e750_ap

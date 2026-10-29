@@ -1,0 +1,126 @@
+---
+# Apply the br-lan + AP configuration with a watchdog rollback. Raw only: the
+# target has no Python. The watchdog is armed BEFORE the reload; the operator
+# confirms with playbook-e750-ap-confirm.yml once SSH and the AP are verified.
+
+- name: Require a key for an encrypted AP
+  ansible.builtin.assert:
+    that:
+      - e750_ap_encryption in ['none', 'psk2', 'psk']
+      - e750_ap_encryption == 'none' or e750_ap_key | length >= 8
+    fail_msg: >-
+      e750_ap_encryption must be none/psk2/psk; psk2/psk needs
+      -e e750_ap_key=... (at least 8 chars)
+
+- name: Back up the current network, wireless and firewall config
+  ansible.builtin.raw: |
+    set -e
+    rm -rf {{ e750_ap_backup_dir }}
+    mkdir -p {{ e750_ap_backup_dir }}
+    cp /etc/config/network /etc/config/wireless /etc/config/firewall {{ e750_ap_backup_dir }}/
+    rm -f {{ e750_ap_confirm_file }}
+    date -u +%Y-%m-%dT%H:%M:%SZ > {{ e750_ap_backup_dir }}/timestamp
+    ls -l {{ e750_ap_backup_dir }}
+  changed_when: true
+
+- name: Apply br-lan and the AP interface
+  ansible.builtin.raw: |
+    set -e
+    uci set network.brlan=device
+    uci set network.brlan.name='br-lan'
+    uci set network.brlan.type='bridge'
+    uci set network.brlan.ports='eth0'
+    uci set network.lan.device='br-lan'
+    uci set network.lan.proto='static'
+    uci set network.lan.ipaddr='{{ e750_ap_lan_ip }}'
+    uci set network.lan.netmask='{{ e750_ap_lan_netmask }}'
+    uci -q delete network.lan.type || true
+
+    uci set wireless.default_radio0.disabled='0'
+    uci set wireless.default_radio0.device='radio0'
+    uci set wireless.default_radio0.network='lan'
+    uci set wireless.default_radio0.mode='ap'
+    uci set wireless.default_radio0.ssid='{{ e750_ap_ssid }}'
+    uci set wireless.default_radio0.encryption='{{ e750_ap_encryption }}'
+    if [ '{{ e750_ap_encryption }}' = 'none' ]; then
+      uci -q delete wireless.default_radio0.key || true
+    else
+      uci set wireless.default_radio0.key='{{ e750_ap_key }}'
+    fi
+    uci set wireless.default_radio0.isolate='{{ e750_ap_isolate }}'
+    uci set wireless.default_radio0.macaddr='{{ e750_ap_macaddr }}'
+
+    uci set wireless.radio0.channel='{{ e750_ap_channel }}'
+    uci set wireless.radio0.beacon_int='{{ e750_ap_beacon_int }}'
+    uci set wireless.radio0.dtim_period='{{ e750_ap_dtim_period }}'
+    uci set wireless.radio0.disabled='0'
+    uci commit network
+    uci commit wireless
+    echo "network.lan.device=$(uci -q get network.lan.device)"
+    echo "ap.ssid=$(uci -q get wireless.default_radio0.ssid)"
+    echo "sta.ssid=$(uci -q get wireless.sta.ssid)"
+  changed_when: true
+
+- name: Arm the watchdog rollback
+  ansible.builtin.raw: |
+    setsid sh -c '
+      sleep {{ e750_ap_watchdog_seconds }}
+      if [ ! -f {{ e750_ap_confirm_file }} ]; then
+        cp {{ e750_ap_backup_dir }}/network /etc/config/network
+        cp {{ e750_ap_backup_dir }}/wireless /etc/config/wireless
+        cp {{ e750_ap_backup_dir }}/firewall /etc/config/firewall
+        logger -t e750-ap "watchdog reverted the AP/br-lan change"
+        wifi reload
+        /etc/init.d/network reload
+        /etc/init.d/firewall reload
+      fi
+    ' >/dev/null 2>&1 &
+    sleep 1
+    ps w | grep '[e]750-ap\|sleep {{ e750_ap_watchdog_seconds }}' | head -3 || true
+    echo "watchdog armed for {{ e750_ap_watchdog_seconds }}s; confirm with playbook-e750-ap-confirm.yml"
+  changed_when: true
+
+- name: Reload network, restart wireless cleanly, reload firewall
+  ansible.builtin.raw: |
+    # Create br-lan first, then bring the vifs up from scratch. A plain
+    # `wifi reload` after the bridge change can leave the AP un-beaconed on
+    # ath9k; a full down/up initialises both vifs correctly.
+    /etc/init.d/network reload
+    sleep 6
+    wifi down
+    sleep 2
+    wifi up
+    sleep 10
+    /etc/init.d/firewall reload
+    sleep 2
+    echo reloaded
+  register: _e750_ap_reload
+  changed_when: true
+  failed_when: false
+
+- name: Verify the AP and bridge
+  ansible.builtin.raw: |
+    echo "=== br-lan ==="
+    ip -br a show br-lan 2>&1 || true
+    echo "=== interfaces ==="
+    iw dev 2>/dev/null | grep -E 'Interface|ssid|channel' || true
+    echo "=== lan status ==="
+    ubus call network.interface.lan status 2>/dev/null | grep -E '"up"|"device"|"address"' || true
+    echo "=== hostapd ==="
+    ps w | grep '[h]ostapd' | head -2 || true
+    logread | grep -i 'AP-ENABLED' | tail -1 || true
+    iw dev phy1-ap0 info 2>/dev/null | grep -E 'type AP|channel' || true
+    echo "=== sta link ==="
+    iw dev phy1-sta0 link 2>/dev/null | grep -E 'Connected|SSID|signal' || true
+  register: _e750_ap_verify
+  changed_when: false
+
+- name: Show the AP/bridge state
+  ansible.builtin.debug:
+    msg:
+      - "{{ _e750_ap_reload.stdout_lines | default([]) }}"
+      - "{{ _e750_ap_verify.stdout_lines }}"
+      - >-
+        The change is NOT confirmed yet. After verifying SSH and the AP, run
+        playbook-e750-ap-confirm.yml. If it is not confirmed within
+        {{ e750_ap_watchdog_seconds }}s, the watchdog restores the backup.

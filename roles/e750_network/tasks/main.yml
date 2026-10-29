@@ -19,7 +19,7 @@
       echo "zone {{ e750_firewall_wan_zone }} not found"
       exit 1
     fi
-    uci -q delete firewall.$zone.network
+    uci -q delete firewall.$zone.network || true
     for n in {{ e750_firewall_wan_networks | join(' ') }}; do
       uci add_list firewall.$zone.network="$n"
     done

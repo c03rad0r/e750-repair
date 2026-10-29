@@ -1,0 +1,40 @@
+---
+# Restore the pre-change network/wireless/firewall config.
+#
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-ap-rollback.yml
+
+- name: GL-E750 — roll back the AP+br-lan change
+  hosts: e750_ssh
+  gather_facts: false
+  vars_files:
+    - roles/e750_ap/defaults/main.yml
+  become: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Restore the backup
+      ansible.builtin.raw: |
+        set -e
+        test -f {{ e750_ap_backup_dir }}/network
+        cp {{ e750_ap_backup_dir }}/network /etc/config/network
+        cp {{ e750_ap_backup_dir }}/wireless /etc/config/wireless
+        cp {{ e750_ap_backup_dir }}/firewall /etc/config/firewall
+        rm -f {{ e750_ap_confirm_file }}
+        wifi reload
+        /etc/init.d/network reload
+        sleep 5
+        /etc/init.d/firewall reload
+        echo rolled-back
+      changed_when: true
+
+    - name: Verify the rollback
+      ansible.builtin.raw: |
+        ip -br a show br-lan 2>&1 || true
+        ip -br a show eth0 2>&1 || true
+        iw dev 2>/dev/null | grep -E 'Interface|ssid' || true
+      register: _e750_ap_rollback
+      changed_when: false
+
+    - name: Show the rollback
+      ansible.builtin.debug:
+        msg: "{{ _e750_ap_rollback.stdout_lines }}"
