@@ -1,0 +1,57 @@
+diff --git a/wallet/offline.go b/wallet/offline.go
+index 9061288..e34b14b 100644
+--- a/wallet/offline.go
++++ b/wallet/offline.go
+@@ -1,7 +1,9 @@
+ package wallet
+ 
+ import (
++	"errors"
+ 	"fmt"
++	"io"
+ 	"net"
+ 	"net/url"
+ 	"strings"
+@@ -14,6 +16,10 @@ func isNetworkError(err error) bool {
+ 		return false
+ 	}
+ 
++	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
++		return true
++	}
++
+ 	errStr := err.Error()
+ 	networkErrors := []string{
+ 		"no such host",
+@@ -27,6 +33,10 @@ func isNetworkError(err error) bool {
+ 		"server misbehaving",
+ 		"dial tcp",
+ 		"lookup",
++		"eof",
++		"unexpected eof",
++		"connection closed",
++		"http2: client connection lost",
+ 	}
+ 
+ 	for _, netErr := range networkErrors {
+@@ -35,14 +45,16 @@ func isNetworkError(err error) bool {
+ 		}
+ 	}
+ 
+-	// Check for specific network error types
+-	if _, ok := err.(net.Error); ok {
++	var netErr net.Error
++	if errors.As(err, &netErr) {
+ 		return true
+ 	}
+-	if _, ok := err.(*net.OpError); ok {
++	var opErr *net.OpError
++	if errors.As(err, &opErr) {
+ 		return true
+ 	}
+-	if _, ok := err.(*url.Error); ok {
++	var urlErr *url.Error
++	if errors.As(err, &urlErr) {
+ 		return true
+ 	}
+ 
