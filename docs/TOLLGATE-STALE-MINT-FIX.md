@@ -68,3 +68,21 @@ The E750 `wallet.db` was never deleted; both minibits keyset records and the
 Also fixed in the fake mint: `/v1/keys` must only list active keysets **with**
 keys (NUT-01), because gonuts' `Keyset.UnmarshalJSON` fails with
 `unexpected end of JSON input` on an entry without a `keys` object.
+
+## Rebuilding the E750 binary
+
+The E750 runs TollGate 0.6.0, which pins gonuts v0.13.0. The upstream PR targets
+gonuts `main` (v0.14.x), so the device build is the same fix backported:
+
+```bash
+scripts/build-tollgate-wrt.sh            # -> tollgate-wrt-mips
+GOARCH=amd64 GOMIPS= scripts/build-tollgate-wrt.sh tollgate-wrt-amd64
+```
+
+The script clones module `v0.6.0`, gonuts `v0.13.0`, applies
+`patches/gonuts-isnetworkerror-eof.patch`, and cross-compiles with
+`-trimpath -ldflags '-s -w' -tags ...` (CGO off). Deployed binary:
+md5 `2a73aa2fc90a9b269d9b3c256bfc5f08`, sha256 `6d352b0ca6c40c497b6bdd7aa494260aef1eb8ae221759fee21b3b40622edb5a`.
+
+Byte-identical rebuilds depend on the Go toolchain and checkout path (Go embeds
+module metadata); the code line and behaviour are pinned by the tag + patch.

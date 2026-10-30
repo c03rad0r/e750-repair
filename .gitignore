@@ -13,3 +13,4 @@ state/bsbf/*.json
 image/build/
 image/*.tar.zst
 image/bin/
+state/build/

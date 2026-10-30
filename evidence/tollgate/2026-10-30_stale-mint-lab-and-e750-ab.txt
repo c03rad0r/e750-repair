@@ -46,7 +46,8 @@ A) old v0.6.0-g9364f2e, md5 09a2f0b781be717086569e52eed3f147
    log: Wallet initialization failed (.../v1/keys/00107937db0cc865: EOF)
         — starting in degraded mode
 
-B) fixed v0.6.0 + patched gonuts, md5 286b8f28eb8bbeece43d85bfe7dedbbe
+B) fixed v0.6.0 + patched gonuts (built by scripts/build-tollgate-wrt.sh),
+   md5 2a73aa2fc90a9b269d9b3c256bfc5f08
    log: Skipping keyset 00107937db0cc865 until connection is restored.
         Skipping keyset 00500550f0494146 until connection is restored.
         registered mint macadamia / westernbtc / kashu / cubabitcoin
@@ -57,5 +58,8 @@ B) fixed v0.6.0 + patched gonuts, md5 286b8f28eb8bbeece43d85bfe7dedbbe
    wallet.db untouched: both minibits keyset records still present
 
 ## Artifacts
-- E750 binary: /usr/bin/tollgate-wrt (backup /usr/bin/tollgate-wrt.bak-1793320972)
+- E750 binary: /usr/bin/tollgate-wrt (md5 2a73aa2fc90a9b269d9b3c256bfc5f08)
+  backup: /usr/bin/tollgate-wrt.bak-1793320972
+- rebuild: scripts/build-tollgate-wrt.sh (v0.6.0 + gonuts v0.13.0 +
+  patches/gonuts-isnetworkerror-eof.patch)
 - lab ipk: tollgate-wrt_0.6.0_x86_64-x86-64.ipk with the patched binary
