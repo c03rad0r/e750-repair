@@ -1,0 +1,36 @@
+# Stale-mint wallet fix — 2026-10-30
+
+## Field failure
+- Portal showed `no-reachable-mints` although coinos, macadamia, westernbtc,
+  kashu.me and cubabitcoin were reachable.
+- wallet.db held an inactive minibits keyset with empty public keys.
+- `loadWalletMints()` fetched it, got EOF, and `isNetworkError()` did not
+  classify EOF -> wallet init failed -> degraded mode.
+
+## Upstream
+- gonuts PR: OpenTollGate/gonuts-tollgate#45
+  - `errors.Is(err, io.EOF)` / `io.ErrUnexpectedEOF`
+  - `eof` / `unexpected eof` / `connection closed` substrings
+  - `errors.As` for net.Error / *net.OpError / *url.Error
+  - tests: `TestIsNetworkErrorEOF`, `TestLoadWalletSkipsUnreachableStoredMint`
+  - `go test ./wallet/ -count=1` -> ok (104s)
+- module PR: OpenTollGate/tollgate-module-basic-go#1142
+  - pin `gonuts v0.14.2-0.20261030003712-ae77396240a2`
+  - `TestNewToleratesUnreachableStoredMint` RED on v0.14.1 with the exact
+    production EOF error, GREEN with the fix
+- PRTA PR: OpenTollGate/physical-router-test-automation#330
+  - `lib/fake_mint.py`: `keysets` (active + inactive-without-keys) and `eof` modes
+  - `tests/api/test_mint_stale_keyset_offline.py` (1 test collected)
+
+## E750 (patched binary, wallet.db untouched)
+- built v0.6.0 + patched gonuts for linux/mips softfloat
+- `/usr/bin/tollgate-wrt` replaced; backup `/usr/bin/tollgate-wrt.bak-1793320972`
+- log:
+  `Skipping keyset 00107937db0cc865 until connection is restored.`
+  `Skipping keyset 00500550f0494146 until connection is restored.`
+  `registered mint https://mint.macadamia.cash/` ... 4 more
+- API `/` -> `"kind":10021` (full mode)
+- portal `http://10.0.0.1:2051/splash.html` -> 200
+- `tollgate wallet info` -> `Total: 1 sats across 1 mints`,
+  `https://mint.minibits.cash/Bitcoin: 1` -> the ecash is preserved and visible
+- wallet.db still has both minibits keyset records (grep count 2 each)
