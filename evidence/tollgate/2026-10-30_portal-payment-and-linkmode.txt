@@ -1,0 +1,46 @@
+# Portal payment + link-mode data — 2026-10-30 12:08Z
+
+## End-to-end payment
+
+ndsctl clients:
+
+  ip=10.0.0.108  mac=50:76:af:2f:33:ed  state=Trusted
+  ip=10.0.0.150  mac=52:55:a4:72:11:da  state=Authenticated
+
+tollgate wallet info:
+
+  Total: 3 sats across 2 mints
+    https://mint.cubabitcoin.org: 2
+    https://mint.minibits.cash/Bitcoin: 1
+
+The 2 sats at cubabitcoin were earned by the gateway (the minibits sat is the
+preserved pre-existing balance). A real client paid, was authenticated by
+nodogsplash, and the portal is serving `kind 10021`.
+
+## Link-mode measurements
+
+`/etc/e750/metrics.csv`, 763 samples (~13 h, one per minute):
+
+  avg STA RTT      65.2 ms
+  avg 4G RTT       39.8 ms
+  avg ratio        0.71   (4G/STA)
+  avg CPU idle     10.5 %
+  samples meeting the aggregate gate (ratio < 1.5, CPU idle > 30 %): 98 / 763
+
+Current MPTCP endpoints:
+
+  id 2 subflow backup dev wwan0
+  id 3 subflow dev phy1-sta0
+
+Decision: **keep `wwan0` in standby and the controller observe-only.** The 4G
+RTT is often better, but the E750 has almost no CPU headroom (10.5 % idle on
+average), and aggregation both spends mobile data and was slower in the
+2026-10-29 measurements (27.9 -> 25.5 Mbps single-stream, 9 s -> 39 s parallel).
+
+## Observation
+
+The TollGate `upstream_detector` probes the local gateway `192.168.8.254:2121`
+and the 4G gateway `10.120.4.133:2121` every 30 s, retries 3x, and logs a
+failure each time. Those are not TollGates in this deployment; the probing is
+harmless but adds log noise and CPU work on a device with ~10 % idle. Consider
+disabling upstream/reseller probing when the router only acts as a gateway.

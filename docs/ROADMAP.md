@@ -18,7 +18,8 @@ wwan0      Aldi Talk 4G     BSBF backup subflow (standby)
 BSBF       enabled; EU server in an nspawn container on the OMR host,
            egress 167.235.218.44
 TollGate   v0.6.0 + stale-mint fix (kind 10021); portal uhttpd :2051;
-           wallet: 1 sat at minibits, preserved but unspendable while it is down
+           wallet: 3 sats across 2 mints (2 at cubabitcoin earned by the
+           gateway, 1 at minibits preserved but unspendable while it is down)
 link-mode  metrics every minute; controller observe-only (standby)
 OLED       SSID + link mode + clients + clock every minute
 serial     dead: 0/5, empty output — no flash / U-Boot recovery
@@ -79,6 +80,8 @@ TollGate reboots.
 | Stale-mint fix | merged; gonuts/module/PRTA PRs + E750 A/B |
 | Reproducible E750 binary | merged; `scripts/build-tollgate-wrt.sh` + backport patch |
 | Image bake | built (211 packages); **not flashed** |
+| End-to-end payment | real client authenticated; 2 sats earned at cubabitcoin |
+| Link-mode decision | standby + observe-only, based on 763 samples |
 
 ## Remaining work
 
@@ -122,12 +125,17 @@ Full per-host table: [`KERNEL-MATRIX.md`](KERNEL-MATRIX.md).
 
 ### P1 — portal / product
 
-- [ ] **End-to-end payment on a real phone**: association, DHCP, splash,
-      quote/invoice, post-auth egress, renewal, logout. The 2.4 GHz path is
-      ready; this is the acceptance test.
-- [ ] **Link-mode activation decision**: keep observe-only or enable switching.
-      Current data says standby (CPU-bound; 4G RTT 31–45 ms is not reliably
-      better than STA 46–58 ms).
+- [x] **End-to-end payment on a real client**: a client (`52:55:a4:72:11:da`,
+      `10.0.0.150`) is `Authenticated`, and the wallet earned **2 sats at
+      cubabitcoin** (3 sats across 2 mints total). Evidence:
+      `evidence/tollgate/2026-10-30_portal-payment-and-linkmode.txt`.
+- [ ] **Renewal/logout check** for that client (the first paid session is
+      confirmed; expiry and deauth are not).
+- [x] **Link-mode decision: keep `wwan0` in standby and the controller
+      observe-only.** 763 samples: 4G RTT 39.8 ms vs STA 65.2 ms (ratio 0.71),
+      but CPU idle averages **10.5 %**, and only 98/763 samples met the
+      aggregate gate. Aggregation also spends mobile data and was slower on
+      2026-10-29.
 - [ ] **Stale-keyset startup latency**: the fixed build spends ~50 s per
       unreachable keyset before `kind 10021`. Add a short timeout for offline
       keyset fetches.
@@ -151,6 +159,11 @@ Full per-host table: [`KERNEL-MATRIX.md`](KERNEL-MATRIX.md).
       (replace the pseudo-version) and rebuild.
 - [ ] **MCU/OLED**: custom “TollGate” banner needs MCU firmware; the JSON
       protocol has no free-text field. Current driver is the limit.
+- [ ] **Reduce upstream-detector noise/load**: the daemon probes
+      `192.168.8.254:2121` and `10.120.4.133:2121` every 30 s (3 retries) and
+      logs a failure each time. They are not TollGates here. Disable reseller
+      probing when the router only acts as a gateway — worthwhile on a device
+      with ~10 % CPU idle.
 - [ ] **Final audit**: `pytest`, `ansible-playbook --syntax-check`, no secrets,
       no art dumps, all PRs merged, image checksum recorded.
 - [ ] Optional: EU latency test, 4G antenna/position, thermal check after the
