@@ -82,12 +82,28 @@ mkdir -p /etc/sysctl.d
 printf 'net.ipv4.tcp_migrate_req=0\nnet.ipv4.tcp_syncookies=1\n' > /etc/sysctl.d/99-cve-2026-98432.conf
 
 # Services and cron.
+
+# Point xray's tproxy inbound at br-portal. The package default listens on
+# 127.0.0.1, which cannot receive a TPROXY flow for a public destination.
+if [ -f /etc/xray/config.json ] && command -v jq >/dev/null 2>&1; then
+	[ -f /etc/xray/config.json.bak ] || cp /etc/xray/config.json /etc/xray/config.json.bak
+	jq '.inbounds[0].listen="10.0.0.1"
+	    | .inbounds[0].protocol="dokodemo-door"
+	    | .inbounds[0].settings.network="tcp"
+	    | .inbounds[0].settings.followRedirect=true
+	    | del(.inbounds[0].streamSettings.sockopt.tproxy)' \
+		/etc/xray/config.json > /etc/xray/config.json.new && \
+		mv /etc/xray/config.json.new /etc/xray/config.json
+fi
+
 /etc/init.d/e750-portal-tproxy enable
 touch /etc/crontabs/root
 grep -q e750-link-mode /etc/crontabs/root || \
 	echo '* * * * * /usr/bin/e750-link-mode.sh tick >/dev/null 2>&1' >> /etc/crontabs/root
 grep -q e750-mcu-oled /etc/crontabs/root || \
 	echo '* * * * * /usr/bin/e750-mcu-oled.sh >/dev/null 2>&1' >> /etc/crontabs/root
+grep -q 'portal-tproxy.sh --ensure' /etc/crontabs/root || \
+	echo '* * * * * /usr/bin/e750-portal-tproxy.sh --ensure >/dev/null 2>&1' >> /etc/crontabs/root
 /etc/init.d/cron enable
 
 exit 0

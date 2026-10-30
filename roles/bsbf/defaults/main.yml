@@ -26,6 +26,7 @@ bsbf_tproxy_bypass_interfaces:
 bsbf_portal_tproxy: true
 bsbf_portal_interface: "br-portal"
 bsbf_portal_network: "10.0.0.0/24"
+bsbf_portal_ip: "10.0.0.1"
 
 # Packages required for MBIM, MPTCP endpoint management, and the BSBF client.
 bsbf_packages:

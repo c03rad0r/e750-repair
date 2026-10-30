@@ -198,16 +198,59 @@
     chmod 755 /etc/bsbf/portal-tproxy.sh
   when: bsbf_portal_tproxy | bool
 
+- name: Ensure jq is available for the xray config patch
+  ansible.builtin.raw: |
+    command -v jq >/dev/null 2>&1 && exit 0
+    if command -v apk >/dev/null 2>&1; then apk add jq >/dev/null 2>&1
+    elif command -v opkg >/dev/null 2>&1; then opkg install jq >/dev/null 2>&1
+    fi
+    command -v jq >/dev/null 2>&1
+  when: bsbf_portal_tproxy | bool
+  changed_when: false
+
+- name: Point xray's redirect inbound at the portal address
+  ansible.builtin.raw: |
+    set -e
+    [ -f /etc/xray/config.json ] || exit 0
+    [ -f /etc/xray/config.json.bak ] || cp /etc/xray/config.json /etc/xray/config.json.bak
+    jq '.inbounds[0].listen="{{ bsbf_portal_ip }}"
+        | .inbounds[0].protocol="dokodemo-door"
+        | .inbounds[0].settings.network="tcp"
+        | .inbounds[0].settings.followRedirect=true
+        | del(.inbounds[0].streamSettings.sockopt.tproxy)' \
+      /etc/xray/config.json > /etc/xray/config.json.new
+    mv /etc/xray/config.json.new /etc/xray/config.json
+    /etc/init.d/xray restart 2>/dev/null || /etc/init.d/xray reload 2>/dev/null || true
+    sleep 3
+    netstat -ltn 2>/dev/null | grep ':12345 ' >/dev/null || {
+      echo 'xray did not listen on 12345'; exit 1; }
+    echo xray-redirect-patched
+  when: bsbf_portal_tproxy | bool
+  changed_when: true
+
 - name: Route authenticated portal clients through BSBF
   ansible.builtin.raw: |
-    modprobe nft_tproxy 2>/dev/null || true
+    modprobe nft_redir 2>/dev/null || true
     BSBF_PORTAL_IFACE='{{ bsbf_portal_interface }}' \
     BSBF_PORTAL_NETWORK='{{ bsbf_portal_network }}' \
+    BSBF_PORTAL_IP='{{ bsbf_portal_ip }}' \
       /etc/bsbf/portal-tproxy.sh
-    nft list chain ip bsbf_portal prerouting | head -5
+    nft list chain inet bsbf_portal prerouting | head -8
+    nft list chain ip filter ndsRTR 2>/dev/null | grep 'bsbf-portal-redirect' | head -1
+    nft list chain inet fw4 input 2>/dev/null | grep 'bsbf-portal-redirect' | head -1
   register: _bsbf_portal_tproxy
   changed_when: true
   when: bsbf_portal_tproxy | bool
+
+- name: Keep the portal redirect allowlist after nodogsplash reloads
+  ansible.builtin.raw: |
+    touch /etc/crontabs/root
+    grep -q 'portal-tproxy.sh --ensure' /etc/crontabs/root || \
+      echo '* * * * * /etc/bsbf/portal-tproxy.sh --ensure >/dev/null 2>&1' >> /etc/crontabs/root
+    /etc/init.d/cron restart >/dev/null 2>&1 || true
+    grep 'portal-tproxy.sh --ensure' /etc/crontabs/root
+  when: bsbf_portal_tproxy | bool
+  changed_when: true
 
 - name: Show the tproxy bypass
   ansible.builtin.raw: |

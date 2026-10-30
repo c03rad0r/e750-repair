@@ -125,15 +125,19 @@ blocked; `ndsctl auth`; post-auth `curl https://1.1.1.1/cdn-cgi/trace` returns
 `ip=167.235.218.44` (the Hetzner BSBF server). Evidence:
 `evidence/portal/2026-10-29_portal-over-bond.txt`.
 
-> **2026-10-30 re-test — this is currently NOT delivering.** A fresh veth
-> client with a DHCP lease + `ndsctl auth` + the `0x30000` mark exits at
-> `176.0.8.4` (the router's WAN), while the router and the BSBF container both
-> exit at `167.235.218.44`. The tproxy counter increments, but xray listens on
-> `127.0.0.1:12345`, which cannot receive a flow whose original destination is
-> a public IP. Making xray listen on `0.0.0.0` makes the request fail instead of
-> leak; `redirect`/`dnat` variants also fail to deliver to the socket. See
-> `evidence/portal/2026-10-30_tproxy-not-delivering.txt` and the P0 roadmap
-> item. Do not treat the 2026-10-29 line above as current until this is fixed.
+> **2026-10-30 fix — REDIRECT + ndsRTR accept.** The original tproxy matched
+> but the delivered flow was dropped by nodogsplash's `ip filter ndsRTR`
+> (`ip protocol tcp ... drop`), and xray listened on `127.0.0.1`. The working
+> form is a `table inet bsbf_portal` **nat** rule at priority -140:
+> `redirect to :12345`, xray `dokodemo-door` on `10.0.0.1:12345` with
+> `followRedirect`, plus
+> `nft insert rule ip filter ndsRTR tcp dport 12345 accept` and an
+> `inet fw4 input` accept for the portal. Verified on the E750: pre-auth 307,
+> auth, HTTP/HTTPS egress `167.235.218.44`. The BSBF client and the portal
+> still share `/etc/xray/config.json`; the production follow-up is one xray
+> process with two inbounds (BSBF `127.0.0.1:12345` + portal
+> `10.0.0.1:12346`) or two processes. Evidence:
+> `evidence/portal/2026-10-30_tproxy-fix.txt`.
 
 ## Reproducibility contract
 
