@@ -93,11 +93,13 @@ Full per-host table: [`KERNEL-MATRIX.md`](KERNEL-MATRIX.md).
       kernel patch. Flash is separately blocked by the serial.
 - [ ] **MT6000**: OMR stable `v0.64.2` = `6.18.39`; identify the first release
       with `6.18.56+` (`v0.65-snapshot` is the candidate).
-- [ ] **Ubuntu**: wait for `7.0.0-43.43` (x280, cobrador) and
-      `6.8.0-149.149` (t440); do not reboot onto 42.42/147.147.
-- [ ] **dq05**: `apt-cache` hangs; repair lists/locks, then map 25.10
-      `6.17.0-41` to the fix.
-- [ ] **t14**: host answers ping but SSH:22 is refused; restore sshd/console.
+- [ ] **Ubuntu**: wait for `7.0.0-43.43` (x280, cobrador, t14) and
+      `6.8.0-149.149` (t440); do not reboot onto 42.42/147.147. Re-checked
+      after `apt-get update` on 2026-10-30 — still not published.
+- [ ] **dq05**: `apt-cache` works but takes ~44 s; candidate `6.17.0-41.41` is
+      the running kernel. Map 25.10 to the CVE fix and free space (disk 98%).
+- [x] **t14**: local workstation (`T14Gen5`); `sshd` is loopback-only by design
+      and work is done locally — not a fleet access blocker.
 
 ### P0 — physical / recovery
 
