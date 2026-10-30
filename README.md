@@ -59,6 +59,7 @@ additive role and playbook.
 | Parallel bonding servers | [`docs/BONDING-SERVERS-PARALLEL.md`](docs/BONDING-SERVERS-PARALLEL.md) | BSBF container next to OMR; aggregation vs standby measurements |
 | 5 GHz portal | [`docs/E750-RADIO5G.md`](docs/E750-RADIO5G.md) | QCA9887 `skip_otp` AP, 2.4 GHz STA/BSBF |
 | CVE-2026-98432 | [`docs/CVE-2026-98432.md`](docs/CVE-2026-98432.md) | IPv4 TCP UAF, fleet status, mitigations |
+| Kernel matrix | [`docs/KERNEL-MATRIX.md`](docs/KERNEL-MATRIX.md) | per-host running/available/CVE-fix versions and upgrade procedure |
 | CVE handover | [`docs/HANDOVER-CVE-2026-98432.md`](docs/HANDOVER-CVE-2026-98432.md) | fleet-maintenance briefing |
 | Tracker | [`docs/E750-REMEDIATION.md`](docs/E750-REMEDIATION.md) | phases, checklist, execution log |
 | Roadmap | [`docs/ROADMAP.md`](docs/ROADMAP.md) | remaining P0–P2 work and inputs needed |

@@ -1,27 +1,58 @@
-# E750 / BSBF / TollGate — remaining roadmap
+# E750 / BSBF / TollGate — roadmap
 
-Status: **combined mode working; remaining work is hardware/decision-gated.**
+Status (2026-10-30): **portal live on 2.4 GHz; stale-mint fix applied; kernel
+updates blocked on upstream releases; serial console dead (flash gated).**
 Default branch: `felixfelix-bot/e750-repair:main` (all work merged via PRs; no open PRs).
+Kernel/CVE detail: [`KERNEL-MATRIX.md`](KERNEL-MATRIX.md).
 Tracker: [`E750-REMEDIATION.md`](E750-REMEDIATION.md) and
 [`BSBF-TOLLGATE-COEXISTENCE.md`](BSBF-TOLLGATE-COEXISTENCE.md).
 
-## Current live state (2026-10-29)
+## Current live state (2026-10-30)
 
 ```text
 eth0       192.168.8.1/24   management LAN
-br-portal  10.0.0.1/24      phy2-ap0 (TollGate-E750, 5 GHz ch36/VHT80)
-phy1-sta0  hermes-lan       2.4 GHz STA/BSBF primary
-2.4 GHz AP disabled         airtime reserved for the backhaul
-wwan0      Aldi Talk 4G     BSBF backup
-BSBF       enabled; EU server in a container on the OMR host, egress 167.235.218.44
-TollGate   v0.6.0 daemon + nodogsplash + portal uhttpd :2051
+br-portal  10.0.0.1/24      phy1-ap0 (TollGate-E750, 2.4 GHz ch11/HT20, 20 dBm)
+phy1-sta0  hermes-lan       2.4 GHz STA/BSBF primary (shares phy1 with the AP)
+5 GHz      disabled         radio1 off, ath10k unloaded (uncalibrated)
+wwan0      Aldi Talk 4G     BSBF backup subflow (standby)
+BSBF       enabled; EU server in an nspawn container on the OMR host,
+           egress 167.235.218.44
+TollGate   v0.6.0 + stale-mint fix (kind 10021); portal uhttpd :2051;
+           wallet: 1 sat at minibits, preserved but unspendable while it is down
+link-mode  metrics every minute; controller observe-only (standby)
+OLED       SSID + link mode + clients + clock every minute
+serial     dead: 0/5, empty output — no flash / U-Boot recovery
+kernel     E750 6.12.94, MT6000 6.18.39 (both still vulnerable)
 health     RESULT OK
-soak       24 h combined soak from 2026-10-29T17:17:45Z (first sample rc=0)
 ```
 
-Verified: pre-auth splash/portal 200 and internet blocked; `ndsctl auth`;
-post-auth ping + HTTP 301; cold boot re-applies the BSBF bypass and starts the
-portal services. 103 contract tests pass.
+Verified on 2026-10-29 in combined mode: pre-auth splash/portal 200 and internet
+blocked; `ndsctl auth`; post-auth **HTTP 301**; cold boot re-applies the BSBF
+tproxy bypass and starts the portal services. The **24 h combined soak** ran
+from `2026-10-29T17:17:45Z` and was restarted on 2026-10-30 after the radio and
+TollGate reboots.
+
+## 2026-10-30 changes (supersede the 2026-10-29 entries below where noted)
+
+- **Portal radio moved to 2.4 GHz.** The uncalibrated 5 GHz `skip_otp` AP
+  deauthenticated a real phone after ~10 s and requested a hardware restart.
+  `phy1-ap0` now shares the calibrated 2.4 GHz radio with the STA. CPU idle
+  went 0% → 90%, free RAM 22 → 41 MB. See
+  [`E750-PORTAL-RADIO-2026-10-30.md`](E750-PORTAL-RADIO-2026-10-30.md).
+- **Stale-mint wallet fix.** A stored inactive keyset for a mint answering EOF
+  aborted wallet init (`no-reachable-mints`). Fixed upstream and backported;
+  the E750 serves `kind 10021` and keeps the 1 sat proof. See
+  [`TOLLGATE-STALE-MINT-FIX.md`](TOLLGATE-STALE-MINT-FIX.md).
+- **Portal branding + link-mode controller** applied; the image now bakes the
+  2.4 GHz portal, `br-portal`, nodogsplash, tproxy, CVE sysctls and crons
+  (211 packages, not flashed).
+- **MCU/OLED driver**: the NUC029ZAN renders fixed pages from JSON; “TollGate”
+  appears via the SSID, not as free text.
+- **Serial regressed to 0/5** after closing the enclosure (was 96/100 after the
+  re-solder). Flashing and U-Boot recovery remain blocked.
+- **Kernel releases checked**: OpenWrt 25.12.6 is `6.12.112` (still one patch
+  short), OMR stable `v0.64.2` is `6.18.39`; Ubuntu fix kernels are not
+  published. See [`KERNEL-MATRIX.md`](KERNEL-MATRIX.md).
 
 ## Completed milestones
 
@@ -30,111 +61,114 @@ portal services. 103 contract tests pass.
 | BSBF client/server IaC | merged; live; failover tested |
 | QCA9887 cal-only experiment | negative; reverted; documented |
 | Operator access / Dropbear | merged; x280 + T14 keys |
-| 4G diagnostics | merged; RF healthy, plan-throttled |
-| Serial fault isolation + tools | merged; adapter `BH00DL3M` is bad |
+| 4G diagnostics | merged; RF healthy, plan-bumped to ~5 Mbps |
+| Serial fault isolation + tools | merged; adapter `BH00DL3M` was bad; re-solder reached 96/100, later regressed |
+| Checksummed serial exec | merged; base64 + SHA-256, retransmit, dry-run. See [`SERIAL-CHECKSUM.md`](SERIAL-CHECKSUM.md) |
 | Network cleanup + health | merged; WAN zone, `RESULT OK` |
 | Health monitor / image | merged; 5-min cron; image with monitor |
-| MCU/OLED investigation | merged; protocol documented, daemon deferred |
+| MCU/OLED investigation | merged; protocol confirmed; driver added 2026-10-30 |
 | TollGate artifact evaluation | merged; v0.6.0 ath79-nand bundle |
-| AP+STA (`br-lan`) | merged; client association + ping verified |
 | Separate portal bridge | merged; `br-portal` + AP, management untouched |
 | Combined BSBF + TollGate | merged; tproxy bypass, post-auth 301, cold boot |
 | Portal role reproducibility | merged; nodogsplash/uhttpd/services in the role |
-| Parallel bonding servers | merged; BSBF in an nspawn container next to OMR on the Hetzner host |
-| Portal over the bond | merged; authenticated guests tproxied into BSBF (see `BONDING-SERVERS-PARALLEL.md`) |
+| Parallel bonding servers | merged; BSBF nspawn next to OMR on Hetzner |
+| Portal over the bond | merged; authenticated guests tproxied into BSBF |
+| Portal branding | merged; “TollGate-E750 · Bonded”, localised strings, `/bond.json` badge |
+| Link-mode metrics/controller | merged; observe-only, per-minute CSV |
+| 2.4 GHz portal move | merged; 5 GHz retired; phone stays associated |
+| Stale-mint fix | merged; gonuts/module/PRTA PRs + E750 A/B |
+| Reproducible E750 binary | merged; `scripts/build-tollgate-wrt.sh` + backport patch |
+| Image bake | built (211 packages); **not flashed** |
 
 ## Remaining work
 
-### P0 — security: CVE-2026-98432
+### P0 — kernels / CVE-2026-98432
 
-- [x] Bonding-server host patched: booted Debian `6.12.113+deb13-arm64` and
-      pinned GRUB (OMR kernel `6.18.41` is unpatched until OMR ships 6.18.56).
-      Reproducible via `playbook-bonding-servers-hardening.yml`.
-- [x] `net.ipv4.tcp_migrate_req=0` + `tcp_syncookies=1` on the host, E750 and
-      MT6000; WAN zones are `input=REJECT`; neither router has a public MPTCP
-      listener.
-- [ ] E750: flash an image with kernel `6.12.113+` when OpenWrt ships it.
-- [ ] MT6000: OMR kernel `6.18.56+`.
-- See [`CVE-2026-98432.md`](CVE-2026-98432.md).
+Full per-host table: [`KERNEL-MATRIX.md`](KERNEL-MATRIX.md).
 
-### P0 — physical / recovery (needs input)
+- [x] Hetzner bonding host on `6.12.113`, GRUB pinned; re-run
+      `playbook-bonding-servers-hardening.yml` after OMR updates.
+- [x] Sysctls + WAN `input=REJECT` + no public MPTCP listener on E750/MT6000.
+- [ ] **E750**: 25.12.6 = `6.12.112`; wait for 25.12.7/snapshot or carry the
+      kernel patch. Flash is separately blocked by the serial.
+- [ ] **MT6000**: OMR stable `v0.64.2` = `6.18.39`; identify the first release
+      with `6.18.56+` (`v0.65-snapshot` is the candidate).
+- [ ] **Ubuntu**: wait for `7.0.0-43.43` (x280, cobrador) and
+      `6.8.0-149.149` (t440); do not reboot onto 42.42/147.147.
+- [ ] **dq05**: `apt-cache` hangs; repair lists/locks, then map 25.10
+      `6.17.0-41` to the fix.
+- [ ] **t14**: host answers ping but SSH:22 is refused; restore sshd/console.
 
-- [x] **Serial cable re-soldered** (2026-10-29): raw reliability improved from
-      0/5 to **96/100** commands; ~4% errors remain.
-- [x] **Checksummed serial exec** (`scripts/serial-exec.py`): base64 upload,
-      device SHA-256, retransmit, decoded-script SHA-256, output SHA-256,
-      `--dry-run`, dangerous-command gate. A natural bit flip was caught and
-      retransmitted; the corrupted script was never executed. See
-      [`SERIAL-CHECKSUM.md`](SERIAL-CHECKSUM.md).
-- [x] 100-command test: 96/100 clean, 4 corrupt; the checksummed channel caught
-      a natural bit flip and retransmitted. Evidence
-      `evidence/serial/2026-10-29_100-command.txt`.
-- [ ] Wiggle test; if errors cluster, reflow/swap the adapter. Use the
-      checksummed channel for all Linux commands and `loadx`/`loady`/ZMODEM for
-      U-Boot/files; never rely on the raw link for typed bootloader commands.
-- [ ] ZMODEM (`sz`/`rz`) smoke test for file transfer; use `loadx`/`loady` in
-      U-Boot, never typed write commands.
-- [ ] Take a fresh private backup before any flash/radio experiment.
-- [x] **5 GHz QCA9887 portal AP**: boot hook loads `skip_otp=1`; `phy2-ap0`
-      serves `TollGate-E750` on ch36/VHT80 -> `br-portal`; 2.4 GHz is the
-      STA/BSBF backhaul; cold boot verified, health OK. No per-device
-      calibration; txpower 10 dBm. See [`E750-RADIO5G.md`](E750-RADIO5G.md)
-      and [`QCA9887-SKIP-OTP.md`](QCA9887-SKIP-OTP.md).
-- [ ] Real 5 GHz client: association, DHCP, splash, payment, post-auth
-      (a veth client on `br-portal` already passes splash/portal/auth/HTTP 301).
-- [x] `cal-pci` + `skip_otp` tried: AP stayed up, no evidence the cal file was
-      used; removed it. `skip_otp` alone is the reproducible path.
-- [ ] Add the boot hook and radio1 defaults to the image.
-- [ ] Decide whether the 5 GHz repair is still required now that the combined
-      2.4 GHz portal + BSBF path works (it is the long-term headroom fix).
+### P0 — physical / recovery
 
-### P1 — product / deployment
+- [x] Serial re-solder (2026-10-29): 0/5 → **96/100** commands.
+- [x] Checksummed serial exec; caught a natural bit flip and retransmitted.
+- [ ] **Serial is dead again (0/5, empty) after closing the enclosure.**
+      Re-open, inspect the connector/reflow, then verify
+      `scripts/serial-tx-test.py` **and** `playbook-e750-serial-check.yml`
+      before any flash. This is the hard gate.
+- [ ] 100-command wiggle test; if errors cluster, replace the adapter.
+- [ ] ZMODEM (`sz`/`rz`) smoke test for file transfer once the link is back.
+- [ ] Fresh private backup before any flash or radio experiment.
+- [ ] **5 GHz is retired for the portal** (uncalibrated `skip_otp` deauths real
+      clients). Keep `radio1` disabled unless real calibration is available.
+      History and role: [`E750-RADIO5G.md`](E750-RADIO5G.md).
+- [x] Art-blob calibration (`art@0x5000`, `cal-pci`, `skip_otp=0`): ath10k
+      still requires OTP and fails `-22`; reverted. See
+      [`QCA9887-SKIP-OTP.md`](QCA9887-SKIP-OTP.md).
+- [ ] Decide whether to pursue donor calibration/driver work for 5 GHz at all.
 
-- [ ] **Real client + payment flow**: phone association, DHCP lease, splash,
-      TollGate quote/invoice, post-auth traffic, logout; capture evidence.
-- [ ] **Complete the 24 h combined soak** and review for unexplained failures.
-- [ ] **BSBF server location**: choose an EU VPS (Houston adds ~160–170 ms) or
-      keep `hermes-nvme`; parameterize and deploy.
-- [ ] **Aldi Talk plan/throttle**: RF is healthy (~-59 dBm); ~0.5 Mbps is likely
-      a plan limit. If it improves, test aggregation without the backup flag.
-- [ ] **Secrets**: rotate the `hermes-lan` PSK (it was exposed in one diagnostic
-      output) and move the STA PSK/BSBF UUID to OpenBao; remove plaintext UCI.
-- [ ] **Image integration**: `tollgate-wrt` is not in the official OpenWrt
-      feed. Decide on the pinned FreedomTechFeed bundle/custom feed; if adopted,
-      bake the portal/TollGate packages + `br-portal`/nodogsplash defaults and
-      the 5 GHz `ath10k-skip-otp` hook into the image and rebuild. Do not flash
-      before a proven serial/checksum path.
-- [ ] **TollGate standalone vs combined**: combined works; document whether a
-      standalone 4G/STA portal is still a required mode.
+### P1 — portal / product
 
-### P2 — polish / upstream
+- [ ] **End-to-end payment on a real phone**: association, DHCP, splash,
+      quote/invoice, post-auth egress, renewal, logout. The 2.4 GHz path is
+      ready; this is the acceptance test.
+- [ ] **Link-mode activation decision**: keep observe-only or enable switching.
+      Current data says standby (CPU-bound; 4G RTT 31–45 ms is not reliably
+      better than STA 46–58 ms).
+- [ ] **Stale-keyset startup latency**: the fixed build spends ~50 s per
+      unreachable keyset before `kind 10021`. Add a short timeout for offline
+      keyset fetches.
+- [ ] **Mint follow-up**: restore `mint.minibits.cash` when it returns and
+      spend/withdraw the preserved 1 sat.
+- [ ] **Image/release**: decide the `tollgate-wrt` source (pinned custom feed vs
+      offline bundle at first boot); rebuild with the fixed kernel + TollGate
+      and flash after the serial gate.
+- [ ] **Secrets**: rotate the exposed `hermes-lan` PSK; move the STA PSK/BSBF
+      UUID to OpenBao; remove plaintext UCI.
+- [ ] **Soak**: restarted after the reboots; complete a clean 24 h window and
+      review for unexplained `FAIL`.
+- [x] BSBF server location: EU nspawn container on the Hetzner OMR host
+      (egress `167.235.218.44`); aggregation stays opt-in.
 
-- [ ] **MCU/OLED**: confirm the transport (`soft_uart`/DTS/GPIO vs `ttyS0`) and
-      whether a source-only package is feasible; only then add a daemon/image
-      package. Console coexistence must be explicit.
-- [ ] **Upstream**: propose a source-only MCU userspace package if the protocol
-      is confirmed; a serdev driver only if the hardware has a separate/muxable
-      UART. Expect pushback on console hijacking.
+### P2 — upstream / polish
+
+- [ ] **Merge the upstream stale-mint PRs**:
+      gonuts-tollgate#45, tollgate-module-basic-go#1142,
+      physical-router-test-automation#330. Then pin the tagged gonuts release
+      (replace the pseudo-version) and rebuild.
+- [ ] **MCU/OLED**: custom “TollGate” banner needs MCU firmware; the JSON
+      protocol has no free-text field. Current driver is the limit.
 - [ ] **Final audit**: `pytest`, `ansible-playbook --syntax-check`, no secrets,
       no art dumps, all PRs merged, image checksum recorded.
-- [ ] **Optional**: EU latency test, 4G antenna/position, 24 h soak after any
-      hardware change.
+- [ ] Optional: EU latency test, 4G antenna/position, thermal check after the
+      enclosure is reopened.
 
 ## Inputs needed from the operator
 
-1. Fix/swap the serial adapter (physical).
-2. A phone and a small Lightning payment for the end-to-end portal test.
-3. Decision/credentials for an EU BSBF VPS.
-4. Aldi Talk plan/high-speed status.
-5. Decision on the TollGate custom feed for image integration.
-6. Whether to continue the 5 GHz repair (physical/serial) now or later.
+1. Repair/replace the serial adapter (physical) — blocks flashing.
+2. A phone and a small Lightning payment for the end-to-end test.
+3. Upstream releases: OpenWrt ≥ 6.12.113, OMR ≥ 6.18.56, Ubuntu 43.43/149.149.
+4. Decision on the TollGate custom feed for image integration.
+5. Whether to pursue 5 GHz calibration at all (currently deferred).
 
 ## Acceptance / definition of done
 
 - Combined soak completes with no unexplained `FAIL`.
 - Cold boot: BSBF endpoints + portal splash/SPA + post-auth HTTP.
 - A real client completes payment and gets internet; logout works.
-- Serial recovery is reliable; 5 GHz either fixed or formally deferred.
+- Serial recovery is reliable; the console gate passes before any flash.
+- E750/MT6000 run a kernel with the CVE fix.
 - Image builds with the chosen package set and is flashed only after the serial
   fix; checksum/evidence recorded.
 - STA PSK/BSBF UUID in OpenBao; no secrets in the repo.
@@ -148,4 +182,5 @@ portal services. 103 contract tests pass.
   tproxy bypass.
 - The open AP is only safe while nodogsplash enforces; never leave it up with
   the service stopped.
-- Do not flash or run 5 GHz experiments without a reliable serial console.
+- Do not flash or run radio experiments without a reliable serial console.
+- Do not delete `wallet.db` to “fix” a mint problem; the ecash must survive.
