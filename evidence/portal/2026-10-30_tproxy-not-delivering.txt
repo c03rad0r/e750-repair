@@ -1,0 +1,63 @@
+# Portal-over-bond tproxy does not deliver (2026-10-30)
+
+## Symptom
+
+A veth client on `br-portal` with a DHCP lease, `ndsctl auth`, and the expected
+`ndsOUT` mark (`0x30000/0x30000`) reaches the internet **directly via the
+router WAN**, not through the BSBF server.
+
+```text
+veth client post-auth egress   https://ifconfig.me -> 176.0.8.4
+E750 router egress             https://ifconfig.me -> 167.235.218.44
+BSBF container egress          https://ifconfig.me -> 167.235.218.44
+```
+
+So BSBF itself is healthy; only the portal tproxy path is bypassed.
+
+## Configuration
+
+```text
+nft bsbf_portal prerouting (priority -140):
+  iifname "br-portal" ip daddr != 10.0.0.0/24 \
+    meta mark & 0x00030000 == 0x00030000 fib daddr type != local \
+    meta l4proto { tcp, udp } th dport != 53 \
+    counter tproxy to :12345 meta mark set 0x00030001
+
+xray inbound: listen 127.0.0.1, port 12345, protocol tunnel,
+              followRedirect true, streamSettings.sockopt.tproxy=tproxy
+```
+
+The counter increments (packets match), but xray only ever listens on
+`127.0.0.1:12345`, which cannot receive a TPROXY flow whose original
+destination is a public IP. The packets continue to be forwarded and are
+NATed by the WAN, hence `176.0.8.4`.
+
+## Attempts
+
+1. `listen: 0.0.0.0` (xray binds `:::12345`): tproxy now matches, but the
+   client request fails (timeout). Debug xray shows no `dokodemo` connection
+   for the client IP, i.e. the tproxy flow is not delivered to the socket.
+2. `listen: 0.0.0.0` + `nft redirect to :12399` + a dokodemo-door inbound
+   (`followRedirect`, no tproxy) + an `inet fw4 input` accept for
+   `tcp dport 12399` from `br-portal`: the redirect counter increments, but
+   the firewall accept counter stays 0 and no xray connection appears.
+3. `listen: 10.0.0.1` with redirect: same result.
+4. `dnat to 127.0.0.1:12345` (tproxy table removed): one packet matches, no
+   response, no xray connection.
+
+## State after the investigation
+
+- Reverted xray to `listen: 127.0.0.1`; removed all temporary nft tables and
+  fw4 input rules.
+- `bsbf_portal` tproxy table restored (`/etc/bsbf/portal-tproxy.sh`).
+- Portal healthy: `splash=200`, `kind=10021`, `e750-health RESULT OK`; the real
+  client `10.0.0.150` is still `Authenticated`.
+
+## Consequence
+
+Guest traffic currently exits via the router's WAN (4G/STA), **not** through the
+bond. It still works, but the portal-over-bond guarantee is not met. This needs
+a dedicated fix (xray tproxy socket vs fw4 ordering, or a different transparent
+proxy setup) plus a lab regression test.
+
+Do not "fix" it by deleting the tproxy table; that hides the problem.

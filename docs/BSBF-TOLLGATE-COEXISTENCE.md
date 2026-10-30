@@ -117,6 +117,11 @@ Goal: a working captive portal with no BSBF running, on the same unit.
       blocked, `ndsctl auth`, post-auth ping + HTTP 301.
 - [x] Combined mode works with the `br-portal` tproxy bypass (PR #22); cold
       boot verified; clean 24 h soak started.
+- [ ] **Portal-over-bond regression (2026-10-30):** the tproxy rule matches and
+      the counter increments, but authenticated guests exit via the router WAN
+      (`176.0.8.4`), not the BSBF server (`167.235.218.44`). xray listens on
+      `127.0.0.1:12345`; `0.0.0.0` and redirect/dnat variants did not deliver.
+      See `evidence/portal/2026-10-30_tproxy-not-delivering.txt`.
 - [ ] Complete the 24 h combined soak.
 
 Evidence: `evidence/tollgate/2026-10-29_standalone-attempt.txt`.
