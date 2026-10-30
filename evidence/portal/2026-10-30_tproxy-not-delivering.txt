@@ -44,6 +44,14 @@ NATed by the WAN, hence `176.0.8.4`.
 3. `listen: 10.0.0.1` with redirect: same result.
 4. `dnat to 127.0.0.1:12345` (tproxy table removed): one packet matches, no
    response, no xray connection.
+5. `listen: 0.0.0.0` + `followRedirect: false` (tproxy only): the tproxy
+   counter reached 60 packets, the request still timed out, and xray logged
+   only non-client flows (`192.168.8.244`, `10.120.4.132`).
+6. `dnat to 127.0.0.1:12399` with `dokodemo-door` (`followRedirect`, no
+   tproxy), `net.ipv4.conf.{all,br-portal,lo}.route_localnet=1`, and an
+   `inet fw4 input` accept for `iifname br-portal ip daddr 127.0.0.1 tcp dport
+   12399`: the DNAT counter matched, the input accept counter stayed 0, and
+   xray never saw the connection.
 
 ## State after the investigation
 
