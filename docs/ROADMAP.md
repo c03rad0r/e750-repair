@@ -21,8 +21,8 @@ TollGate   v0.6.0 + stale-mint fix (kind 10021); portal uhttpd :2051;
            wallet: 3 sats across 2 mints (2 at cubabitcoin earned by the
            gateway, 1 at minibits preserved but unspendable while it is down)
 link-mode  metrics every minute; controller observe-only (standby)
-portal QoS authenticated guests currently exit via the router WAN (tproxy
-           not delivering; see the P0 item below)
+portal QoS authenticated guests redirect to the BSBF server; verified
+           egress 167.235.218.44 (BSBF/portal xray two-inbound follow-up)
 OLED       SSID + link mode + clients + clock every minute
 serial     dead: 0/5, empty output — no flash / U-Boot recovery
 kernel     E750 6.12.94, MT6000 6.18.39 (both still vulnerable)
@@ -75,7 +75,7 @@ TollGate reboots.
 | Combined BSBF + TollGate | merged; tproxy bypass, post-auth 301, cold boot |
 | Portal role reproducibility | merged; nodogsplash/uhttpd/services in the role |
 | Parallel bonding servers | merged; BSBF nspawn next to OMR on Hetzner |
-| Portal over the bond | rule + role merged; **2026-10-30 re-test: tproxy not delivering, guests exit via WAN** |
+| Portal over the bond | redirect fix merged; verified egress `167.235.218.44`; two-inbound follow-up |
 | Portal branding | merged; “TollGate-E750 · Bonded”, localised strings, `/bond.json` badge |
 | Link-mode metrics/controller | merged; observe-only, per-minute CSV |
 | 2.4 GHz portal move | merged; 5 GHz retired; phone stays associated |
@@ -108,16 +108,18 @@ Full per-host table: [`KERNEL-MATRIX.md`](KERNEL-MATRIX.md).
 
 ### P0 — portal-over-bond tproxy
 
-- [ ] **Make authenticated guest traffic actually traverse BSBF.** Today the
-      `bsbf_portal` tproxy counter increments but guests exit via the router
-      WAN (`176.0.8.4`), not `167.235.218.44`. xray listens on
-      `127.0.0.1:12345`, which cannot receive a TPROXY flow for a public
-      destination; `0.0.0.0` and redirect/dnat variants did not deliver either
-      (firewall accept counter stayed 0, no xray connection). Needs a dedicated
-      fix and a lab regression test. Evidence:
-      `evidence/portal/2026-10-30_tproxy-not-delivering.txt`.
-- [ ] Re-verify from a veth client **and** a real phone: post-auth egress must
-      be `167.235.218.44`, and pre-auth must stay blocked.
+- [x] **Make authenticated guest traffic actually traverse BSBF.** REDIRECT at
+      priority -140 to xray `dokodemo-door` on `10.0.0.1:12345`, with
+      `ndsRTR`/`fw4` accepts for the redirect port. Verified on the E750:
+      pre-auth 307, auth, HTTP/HTTPS egress `167.235.218.44`. Evidence:
+      `evidence/portal/2026-10-30_tproxy-fix.txt`.
+- [ ] **One xray process, two inbounds** (BSBF `127.0.0.1:12345` + portal
+      `10.0.0.1:12346`) or two processes, so a BSBF restart cannot reset the
+      portal listener. The current BSBF/portal config conflict is the remaining
+      production blocker.
+- [ ] Re-verify from a veth client **and** a real phone after the two-inbound
+      fix: post-auth egress must be `167.235.218.44`, and pre-auth must stay
+      blocked.
 
 ### P0 — physical / recovery
 

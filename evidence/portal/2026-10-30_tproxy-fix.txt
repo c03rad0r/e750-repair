@@ -1,0 +1,104 @@
+# Portal-over-bond tproxy fix — 2026-10-30
+
+## Root cause
+
+The E750's original tproxy rule matched traffic, but the delivered flow was
+dropped before xray:
+
+- nodogsplash's `ip filter INPUT` jumps to `ndsRTR`;
+- `ndsRTR` has `ip protocol tcp ... drop` before its allowlist;
+- the tproxy/redirect target is a router-local port, so it was dropped;
+- the E750's xray also listened on `127.0.0.1`, which cannot receive a TPROXY
+  flow whose original destination is a public IP.
+
+## Working pattern (verified)
+
+Use **REDIRECT** at priority `-140` (after the nodogsplash mark) and xray's
+`dokodemo-door` with `followRedirect`, listening on the portal address:
+
+```nft
+table inet bsbf_portal {
+  chain prerouting {
+    type nat hook prerouting priority -140; policy accept;
+    iifname "br-portal" ip daddr != 10.0.0.0/24 \
+      meta mark & 0x00030000 == 0x00030000 meta l4proto tcp \
+      th dport != 53 counter redirect to :12345
+    iifname "br-portal" ip daddr != 10.0.0.0/24 \
+      meta mark & 0x00030000 == 0x00030000 meta l4proto udp \
+      th dport != 53 counter drop
+  }
+}
+```
+
+```json
+{
+  "listen": "10.0.0.1",
+  "port": 12345,
+  "protocol": "dokodemo-door",
+  "settings": {"network": "tcp", "followRedirect": true}
+}
+```
+
+And the two accepts that make the local target reachable:
+
+```nft
+insert rule ip filter ndsRTR tcp dport 12345 counter accept comment "bsbf-portal-redirect"
+insert rule inet fw4 input iifname "br-portal" tcp dport 12345 counter accept comment "bsbf-portal-redirect"
+```
+
+- `tools`/role: `roles/bsbf/files/portal-tproxy.sh` (redirect, UDP drop,
+  fw4/ndsRTR accepts, `--ensure`).
+- The `ndsRTR` accept is needed because nodogsplash drops TCP from the portal
+  to the router except its own allowlist. The fw4 input accept covers the
+  portal zone.
+- `--ensure` is run every minute by cron so a nodogsplash restart cannot
+  silently remove the allow rule.
+
+## Evidence
+
+QEMU (OpenWrt 25.12.5, kernel 6.12.94, xray 26.10.21):
+
+```text
+socks outbound via BSBF: 167.235.218.44
+tproxy/redirect table counter: 12 -> 26
+fw4 input accept counter: 13
+client egress: 167.235.218.44
+```
+
+E750 (MIPS, xray 26.3.27, 9eSIM blank):
+
+```text
+client 10.0.0.x, DHCP + ndsctl auth + 0x30000 mark
+HTTP 443: 167.235.218.44
+HTTP 80:  167.235.218.44
+pre-auth: 307 splash
+tproxy/redirect counter increments
+ndsRTR accept counter increments
+```
+
+TPROXY itself was also proven in QEMU (`table inet`, `tproxy ip to :12345`,
+mark before tproxy, accept), but on the E750 the ndsRTR drop made REDIRECT the
+reliable path.
+
+## Caveat — the BSBF client and the portal share xray
+
+The BSBF client and the portal redirect both use `/etc/xray/config.json`.
+Starting/restarting the BSBF service can reset the config/listener back to
+`127.0.0.1`, which breaks the portal redirect. The production fix is **one xray
+process with two inbounds**:
+
+- BSBF tproxy `127.0.0.1:12345` (router traffic)
+- portal `10.0.0.1:12346` (guest redirect)
+
+or two separate processes/configs. The redirect port/`ndsRTR`/fw4 rules must
+match the portal inbound. Until that is done, the portal test above is valid
+when the BSBF client is not fighting over the config.
+
+## Current E750 state after the experiment
+
+- The 9eSIM is blank; `wwan1` is `NO_REGISTRATION`; 4G is intentionally down.
+- The BSBF service was disabled during the portal test to keep the xray config;
+  the router's own BSBF/4G health is degraded.
+- The E750 was rebooted; the xray/BSBF state needs the two-inbound repair. The
+  MT6000 production bond is unaffected.
+- The E750 serial console is still dead; the modem AT path is independent.

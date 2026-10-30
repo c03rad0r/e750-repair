@@ -113,8 +113,9 @@ Do **not** flash until the serial adapter is reliable. When it is:
   `portal`, 2.4 GHz AP disabled.
 - `br-portal` 10.0.0.1, DHCP, firewall portal zone, nodogsplash and the portal
   uhttpd configuration.
-- Portal-over-bond tproxy (`e750-portal-tproxy.sh` + `e750-portal-tproxy` init),
-  the CVE-2026-98432 sysctls, and the link-mode + OLED cron entries.
+- Portal-over-bond REDIRECT (`e750-portal-tproxy.sh` + init), the `jq` package
+  for the xray config patch, the CVE-2026-98432 sysctls, and the link-mode +
+  OLED cron entries.
 - `e750-path-metrics.sh`, `e750-link-mode.sh`, `e750-mcu-oled.sh`,
   `astro`/`nodogsplash` packages, and `e750_linkmode` config.
 

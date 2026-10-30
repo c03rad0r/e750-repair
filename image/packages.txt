@@ -23,6 +23,7 @@ umbim
 uqmi
 
 # Diagnostics
+jq
 coreutils-stty
 coreutils-base64
 lrzsz

@@ -18,8 +18,9 @@ def test_helper_is_present_and_executable() -> None:
     text = script.read_text()
     assert "priority $PRIORITY" in text or "priority -140" in text
     assert "0x00030000" in text
-    assert "tproxy to :12345" in text
-    assert "fwmark 0x1/0x1" in text
+    assert "redirect to :$PORT" in text or "redirect to :12345" in text
+    assert "ndsRTR" in text
+    assert "inet fw4 input" in text
     assert "th dport != 53" in text
 
 
@@ -46,13 +47,17 @@ def test_both_wan_routes_are_verified() -> None:
 def test_docs_and_evidence_record_the_result() -> None:
     doc = read("docs/BONDING-SERVERS-PARALLEL.md")
     for needle in (
-        "priority **-140**",
+        "priority -140",
         "0x30000",
-        "tproxy to :12345",
-        "route_localnet",
-        "evidence/portal/2026-10-29_portal-over-bond.txt",
+        "redirect to :12345",
+        "ndsRTR",
+        "167.235.218.44",
+        "evidence/portal/2026-10-30_tproxy-fix.txt",
     ):
         assert needle in doc, needle
     evidence = read("evidence/portal/2026-10-29_portal-over-bond.txt")
     assert "post-auth trace: ip=167.235.218.44" in evidence
     assert "pre-auth trace: blocked" in evidence
+    fix = read("evidence/portal/2026-10-30_tproxy-fix.txt")
+    assert "ndsRTR" in fix
+    assert "167.235.218.44" in fix
