@@ -1,8 +1,42 @@
 # E750 serial console reliability
 
-Status: **root cause isolated; hardware replacement/swap required** (2026-10-29).
+Status: **CORRECTED 2026-11-04** — see "2026-11-04 re-test" below. The adapter
+is not the fault; the port is an MCU/shared console, not a Linux shell. The
+2026-10-29 analysis further down is kept as history and is superseded.
 
-## Symptom
+## 2026-11-04 re-test (read this first)
+
+Measured on x280 against `/dev/ttyE750 -> ttyUSB5` (FTDI `BH00DL3M`):
+
+- `serial-tx-test.py /dev/ttyE750 --count 3` echoed `echo SERIAL_<nonce>_N`
+  **byte-perfect on all attempts**. There is no TX corruption.
+- The far end answered every line — `echo`, bare CR, bare LF, and the documented
+  MCU JSON queries `{"version":"1"}` / `{"mcu_status":"1"}` — with only `> `.
+  That is an inert MCU/shared-console prompt: it echoes input and executes
+  nothing. It is **not** a shell and not the MCU JSON responder.
+- `serial-tx-test.py` counts a pass only when the nonce appears twice (console
+  echo + command output). An endpoint that never runs commands therefore scores
+  0/N even on a perfectly clean line. The earlier "0/5 corrupt" result was a
+  misdiagnosis of the adapter.
+
+Consequences:
+
+- Do **not** swap, reflow, or replace the `BH00DL3M` adapter for this symptom;
+  it would not produce a shell.
+- The E750 console is the MCU/shared UART. There is no Linux console on this
+  wire, so serial cannot restore LAN/SSH access to the E750.
+- Adapter/port map has drifted since 2026-10-29 (USB re-enumeration):
+
+  | port | FTDI serial | current role |
+  |---|---|---|
+  | `ttyUSB1` | `BG02QAPG` | — |
+  | `ttyUSB2` | `BG046H5F` | GL-MT3000 console (`root@tollgate-9BD4`), 3/3 clean |
+  | `ttyUSB5` | `BH00DL3M` | `/dev/ttyE750`, MCU `>` prompt |
+
+  The docs below that name `ttyUSB1`/`BG046H5F` as the MT6000 control predate
+  this re-enumeration.
+
+## Symptom (historical, 2026-10-29)
 
 The E750 console is silent over `/dev/ttyE750` on x280. The E750's console
 `askfirst` process waits for a valid Enter; the host's TX corrupts it, so the
@@ -106,6 +140,16 @@ console itself is fine (the prompt appears; RX is clean); the host -> E750 TX is
 the fault. Until the adapter is replaced/swapped, use SSH (`x280` ->
 `192.168.8.1`; T14 via `-J x280`) as the primary access and treat serial as
 unavailable for recovery.
+
+## Re-test 2026-11-04
+
+- `/dev/ttyE750` -> `ttyUSB5` (FTDI `BH00DL3M`): prompt appears, but
+  `serial-tx-test.py --count 5` is **0/5 clean**; every `echo` is corrupted.
+- `/dev/ttyUSB1` (FTDI `BG046H5F`, currently the GL-MT3000 control console):
+  **2/2 clean**, prompt `root@tollgate-9BD4`.
+- Conclusion: the E750 adapter/cable is still the bad leg. Move the E750 4-pin
+  console cable to `BG046H5F` (or another known-good 3.3 V adapter) before
+  relying on serial recovery.
 
 ## Evidence
 
