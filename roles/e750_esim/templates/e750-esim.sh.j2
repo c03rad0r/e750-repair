@@ -1,0 +1,114 @@
+#!/bin/sh
+# Managed by e750-repair roles/e750_esim. Do not edit on the device.
+#
+# e750-esim is a thin lpac wrapper for the GL-E750's Quectel EM060K-GL.
+# It re-detects the functional AT port on every invocation with AT+CPIN?
+# (never bare AT), then runs lpac over AT+CSIM.
+#
+#   e750-esim port                     # print the detected AT tty
+#   e750-esim chip info                # read-only card gate
+#   e750-esim profile list
+#   e750-esim notification list
+#   e750-esim profile download -a 'LPA:1$...'   # single-quote the LPA string
+#   e750-esim profile enable <ICCID> 1 # refreshFlag-driven enable
+#   e750-esim profile disable <ICCID>
+#   e750-esim profile delete <ICCID>   # free/test profiles only
+set -eu
+
+LPAC_BIN="{{ e750_esim_bin }}"
+LPAC_DIR="{{ e750_esim_install_dir }}"
+CA_BUNDLE="{{ e750_esim_ca_bundle }}"
+AT_BAUD="{{ e750_esim_at_baud }}"
+
+export LPAC_APDU=at_csim
+export LPAC_APDU_AT_HEX=UPPER
+export LPAC_HTTP_SSL_VERIFY=1
+export LPAC_HTTP_CURL_CAINFO="$CA_BUNDLE"
+export LD_LIBRARY_PATH="$LPAC_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+usage() {
+	cat <<'EOF'
+usage: e750-esim <lpac command> [args...]
+
+  e750-esim port
+  e750-esim chip info
+  e750-esim profile list
+  e750-esim notification list
+  e750-esim profile download -a 'LPA:1$host$matching-id'
+  e750-esim profile enable <ICCID> 1
+  e750-esim profile disable <ICCID>
+  e750-esim profile delete <ICCID>
+
+The LPA string MUST be single-quoted; $ expands under double quotes.
+Never run AT+CFUN=1,1 after a profile operation.
+EOF
+}
+
+at_probe_cpin() {
+	# $1 = tty. Return 0 only if the port answers CPIN/CME (a functional AT
+	# parser), not merely bare OK.
+	tty="$1"
+	out=$(mktemp /tmp/e750-esim-at.XXXXXX) || return 1
+	stty -F "$tty" "$AT_BAUD" raw -echo -crtscts 2>/dev/null || {
+		rm -f "$out"
+		return 1
+	}
+	( cat "$tty" >"$out" ) &
+	reader=$!
+	sleep 1
+	printf 'AT+CPIN?\r' >"$tty" 2>/dev/null || {
+		kill "$reader" 2>/dev/null || true
+		rm -f "$out"
+		return 1
+	}
+	sleep 2
+	kill "$reader" 2>/dev/null || true
+	wait "$reader" 2>/dev/null || true
+	if grep -qE '\+CPIN:|CME ERROR' "$out"; then
+		rm -f "$out"
+		return 0
+	fi
+	rm -f "$out"
+	return 1
+}
+
+detect_port() {
+	if [ -n "${E750_ESIM_AT_DEVICE:-}" ] && [ -e "$E750_ESIM_AT_DEVICE" ]; then
+		printf '%s\n' "$E750_ESIM_AT_DEVICE"
+		return 0
+	fi
+	for tty in /dev/ttyUSB*; do
+		[ -e "$tty" ] || continue
+		if at_probe_cpin "$tty"; then
+			printf '%s\n' "$tty"
+			return 0
+		fi
+	done
+	return 1
+}
+
+if [ "$#" -eq 0 ]; then
+	usage
+	exit 2
+fi
+
+case "$1" in
+-h | --help | help)
+	usage
+	exit 0
+	;;
+port)
+	detect_port || {
+		echo "e750-esim: no functional AT port (probe with AT+CPIN? failed)" >&2
+		exit 1
+	}
+	exit 0
+	;;
+esac
+
+PORT=$(detect_port) || {
+	echo "e750-esim: no functional AT port (probe with AT+CPIN? failed)" >&2
+	exit 1
+}
+
+exec env LPAC_APDU_AT_DEVICE="$PORT" "$LPAC_BIN" "$@"

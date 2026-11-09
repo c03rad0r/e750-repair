@@ -1,0 +1,112 @@
+---
+# Install the pinned on-device lpac stack and the e750-esim wrapper.
+# The E750 has no Python, so every target action uses ansible.builtin.raw.
+
+- name: Read the board name
+  ansible.builtin.raw: cat /tmp/sysinfo/board_name
+  register: _e750_esim_board
+  changed_when: false
+
+- name: Refuse to run on a different board
+  ansible.builtin.assert:
+    that:
+      - _e750_esim_board.stdout | trim == e750_esim_require_board
+    fail_msg: >-
+      e750_esim is for {{ e750_esim_require_board }};
+      this unit reports {{ _e750_esim_board.stdout | trim }}
+    success_msg: "board is {{ e750_esim_require_board }}"
+
+- name: Ensure the AT-port and download tools exist
+  ansible.builtin.raw: |
+    set -e
+    if ! command -v stty >/dev/null 2>&1; then
+      apk add coreutils-stty
+    fi
+    if ! command -v curl >/dev/null 2>&1; then
+      apk add curl
+    fi
+    for t in {{ e750_esim_required_tools | join(' ') }}; do
+      command -v "$t" >/dev/null 2>&1 || {
+        echo "missing required tool: $t" >&2
+        exit 1
+      }
+    done
+  register: _e750_esim_tools
+  changed_when: "'Installing' in _e750_esim_tools.stdout"
+
+- name: Download the pinned lpac bundle
+  ansible.builtin.raw: |
+    set -e
+    if [ ! -f "{{ e750_esim_artifact_path }}" ]; then
+      curl -fL --retry 3 --connect-timeout 15 \
+        -o "{{ e750_esim_artifact_path }}.part" \
+        "{{ e750_esim_artifact_url }}"
+      mv "{{ e750_esim_artifact_path }}.part" "{{ e750_esim_artifact_path }}"
+    fi
+  register: _e750_esim_download
+  changed_when: "'part' not in _e750_esim_download.stdout"
+
+- name: Verify the artifact sha256
+  ansible.builtin.raw: |
+    set -e
+    printf '%s  %s\n' '{{ e750_esim_artifact_sha256 }}' '{{ e750_esim_artifact_path }}' \
+      | sha256sum -c -
+  register: _e750_esim_sha
+  changed_when: false
+
+- name: Install the lpac bundle
+  ansible.builtin.raw: |
+    set -e
+    tar -C / -xzf "{{ e750_esim_artifact_path }}"
+    test -x "{{ e750_esim_bin }}"
+  register: _e750_esim_install
+  changed_when: true
+
+- name: Verify the lpac driver fingerprints
+  ansible.builtin.raw: |
+    set -e
+    grep -q 'LPAC_APDU_AT_HEX' \
+      "{{ e750_esim_install_dir }}/driver/driver_apdu_at_csim.so"
+    grep -q 'LPAC_HTTP_SSL_VERIFY' \
+      "{{ e750_esim_install_dir }}/driver/driver_http_curl.so"
+    test -f "{{ e750_esim_ca_bundle }}"
+  register: _e750_esim_fingerprints
+  changed_when: false
+
+- name: Install the e750-esim wrapper
+  ansible.builtin.raw: |
+    set -e
+    cat > "{{ e750_esim_wrapper }}" <<'E750_ESIM_EOF'
+    {{ lookup('template', 'e750-esim.sh.j2') }}
+    E750_ESIM_EOF
+    chmod 0755 "{{ e750_esim_wrapper }}"
+    sh -n "{{ e750_esim_wrapper }}"
+  register: _e750_esim_wrapper
+  changed_when: true
+
+- name: Point wwan1 at the eSIM APN
+  ansible.builtin.raw: |
+    set -e
+    uci set network.{{ e750_esim_wwan_interface }}.apn='{{ e750_esim_apn }}'
+    uci commit network
+  register: _e750_esim_apn
+  changed_when: true
+  when: e750_esim_configure_apn | bool
+
+- name: Run the read-only eSIM gate
+  ansible.builtin.raw: |
+    set -e
+    echo '== chip info =='
+    {{ e750_esim_wrapper }} chip info
+    echo '== profiles =='
+    {{ e750_esim_wrapper }} profile list
+    echo '== notifications =='
+    {{ e750_esim_wrapper }} notification list
+  register: _e750_esim_gate
+  changed_when: false
+  when: e750_esim_run_readonly_gate | bool
+
+- name: Show the read-only eSIM gate
+  ansible.builtin.debug:
+    msg: "{{ _e750_esim_gate.stdout_lines }}"
+  when: e750_esim_run_readonly_gate | bool

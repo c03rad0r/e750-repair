@@ -1,0 +1,24 @@
+---
+# Install the on-device lpac stack and the e750-esim wrapper on the E750.
+#
+#   LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml \
+#     playbook-e750-esim.yml
+#
+# Read-only gate (card must be seated; no writes):
+#   ... playbook-e750-esim.yml -e e750_esim_run_readonly_gate=true
+#
+# Set the eSIM APN deliberately (this rewrites network.wwan1.apn):
+#   ... -e e750_esim_configure_apn=true -e e750_esim_apn=internet
+#
+# Paid silent.link provisioning is owner-gated and is not automated here.
+
+- name: GL-E750 — eSIM / lpac on-device stack
+  hosts: e750_ssh
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Apply the eSIM role
+      ansible.builtin.include_role:
+        name: e750_esim

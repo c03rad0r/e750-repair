@@ -1,0 +1,34 @@
+---
+# Pinned on-device lpac stack for the GL-E750 (ath79/nand, mips_24kc).
+# Source: Amperstrand/conwrt issue #619 and ifd-modemifd
+# docs/KNOWN-GOOD-ONDEVICE-PROVISIONING.md.
+e750_esim_artifact_url: >-
+  https://github.com/Amperstrand/lpac-openwrt/releases/download/mips24kc-25.12.5-r1/lpac-25.12.5-ath79-nand-mips.tar.gz
+e750_esim_artifact_sha256: "9b7088e814d0efef8ab56d98b65263aec3199659bff633566e1f1192e24c8e99"
+e750_esim_artifact_path: "/tmp/lpac-25.12.5-ath79-nand-mips.tar.gz"
+
+e750_esim_install_dir: "/usr/lib/lpac"
+e750_esim_bin: "/usr/bin/lpac"
+e750_esim_wrapper: "/usr/bin/e750-esim"
+e750_esim_ca_bundle: "/usr/lib/lpac/etc/ssl/certs/ca-certificates-gsma.crt"
+
+# "auto" probes /dev/ttyUSB* with AT+CPIN? (never bare AT) on every command.
+e750_esim_at_device: "auto"
+e750_esim_at_baud: "115200"
+
+# APN is per profile: Aldi internet.eplus.de, silent.link internet,
+# nadanada data.esim. Do not silently rewrite the live APN.
+e750_esim_apn: "internet"
+e750_esim_wwan_interface: "wwan1"
+e750_esim_configure_apn: false
+
+# Read-only gate: chip info + profile list + notification list. Requires the
+# card to be seated and the modem to answer, so it is off by default.
+e750_esim_run_readonly_gate: false
+
+e750_esim_require_board: "glinet,gl-e750"
+e750_esim_required_tools:
+  - stty
+  - curl
+  - sha256sum
+  - tar

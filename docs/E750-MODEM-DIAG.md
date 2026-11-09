@@ -26,8 +26,19 @@ The role runs `scripts/e750-modem-diag.sh` and prints the report.
   `AT+QENG="servingcell"` (band/cell/signal), `AT+CGDCONT?` (APN).
 - `wwan0` rx/tx byte counters.
 
-The AT port is `/dev/ttyUSB3` at 115200 8N1; `stty` puts it in raw mode before
-the queries.
+The measured AT port is `/dev/ttyUSB3` at 115200 8N1; `stty` puts it in raw
+mode before the queries. The role now defaults to `AT_PORT=auto` and probes
+each `/dev/ttyUSB*` with `AT+CPIN?` (never bare `AT`) before running the
+report. Ports shuffle across modem resets, so do not hardcode the path.
+
+Species-level modem facts measured on this unit:
+
+- USB ID `2c7c:030b` (Quectel EM060K-GL)
+- Data composition: **MBIM** on `/dev/cdc-wdm0` (`network.wwan1`,
+  `proto=mbim`); the Linux data netdev is `wwan0`
+- Four `ttyUSB` option ports; functional AT answered on `ttyUSB3` at the
+  time of measurement
+- Observed AT port at 115200 8N1
 
 ## Interpreting it
 
