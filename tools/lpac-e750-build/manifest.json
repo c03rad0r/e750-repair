@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "bundle": "lpac-25.12.5-ath79-nand-mips.tar.gz",
+  "target": {
+    "openwrt": "25.12.5",
+    "target": "ath79/nand",
+    "abi": "mips_24kc"
+  },
+  "sources": {
+    "sdk": {
+      "url": "https://downloads.openwrt.org/releases/25.12.5/targets/ath79/nand/openwrt-sdk-25.12.5-ath79-nand_gcc-14.3.0_musl.Linux-x86_64.tar.zst",
+      "filename": "openwrt-sdk-25.12.5-ath79-nand_gcc-14.3.0_musl.Linux-x86_64.tar.zst",
+      "sha256": "c23d03c6467c7ef38454c40e78a0a477ed8e0e109ec6a2614c162f24e4280e7a",
+      "archive": true,
+      "revision": "openwrt-25.12.5"
+    },
+    "lpac": {
+      "url": "https://codeload.github.com/Amperstrand/lpac/tar.gz/7be0e679ff695d469064088ed0e69b438292e305",
+      "filename": "lpac-7be0e679ff695d469064088ed0e69b438292e305.tar.gz",
+      "sha256": "e5bca0f618e8b166fad446cbca9a316396c45aca9c8c921808a6b2def308b475",
+      "archive": true,
+      "revision": "7be0e679ff695d469064088ed0e69b438292e305"
+    },
+    "cjson": {
+      "url": "https://codeload.github.com/CoelacanthusHex/cJSON/tar.gz/4818f043bda624b5738384eae3a0189b2bd1f5e1",
+      "filename": "cjson-4818f043bda624b5738384eae3a0189b2bd1f5e1.tar.gz",
+      "sha256": "4a53a6d3b24d3d088c9d6f1790627fbcb4966c6bc51e4c44357a273abc938e21",
+      "archive": true,
+      "revision": "4818f043bda624b5738384eae3a0189b2bd1f5e1"
+    },
+    "openssl": {
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.4/openssl-3.5.4.tar.gz",
+      "filename": "openssl-3.5.4.tar.gz",
+      "sha256": "967311f84955316969bdb1d8d4b983718ef42338639c621ec4c34fddef355e99",
+      "archive": true,
+      "revision": "openssl-3.5.4"
+    },
+    "curl": {
+      "url": "https://curl.se/download/curl-8.16.0.tar.xz",
+      "filename": "curl-8.16.0.tar.xz",
+      "sha256": "40c8cddbcb6cc6251c03dea423a472a6cea4037be654ba5cf5dec6eb2d22ff1d",
+      "archive": true,
+      "revision": "curl-8_16_0"
+    },
+    "webpki_ca": {
+      "url": "https://curl.se/ca/cacert.pem",
+      "filename": "cacert-mozilla-2026-11-05.pem",
+      "sha256": "427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285",
+      "archive": false,
+      "revision": "Mozilla CA data 2026-11-05"
+    },
+    "gsma_ci": {
+      "url": "https://raw.githubusercontent.com/Amperstrand/ifd-modemifd/61cf5899512f74271f9b5d5fcba6cd0bef6f4a59/docs/evidence/gate2-verification/ci-bundle.pem",
+      "filename": "ifd-modemifd-61cf5899512f74271f9b5d5fcba6cd0bef6f4a59-ci-bundle.pem",
+      "sha256": "f9654512a761f89649b451367563b82e8ce40f93d235e9563cdb273ce051c857",
+      "archive": false,
+      "revision": "61cf5899512f74271f9b5d5fcba6cd0bef6f4a59"
+    },
+    "gcc_runtime_license": {
+      "url": "https://raw.githubusercontent.com/gcc-mirror/gcc/c9cd41fba9ebd288c4f101e4b99da934bcb96a11/COPYING.RUNTIME",
+      "filename": "gcc-c9cd41fba9ebd288c4f101e4b99da934bcb96a11-COPYING.RUNTIME",
+      "sha256": "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74",
+      "archive": false,
+      "revision": "c9cd41fba9ebd288c4f101e4b99da934bcb96a11"
+    },
+    "gcc_gpl3_license": {
+      "url": "https://raw.githubusercontent.com/gcc-mirror/gcc/c9cd41fba9ebd288c4f101e4b99da934bcb96a11/COPYING3",
+      "filename": "gcc-c9cd41fba9ebd288c4f101e4b99da934bcb96a11-COPYING3",
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "archive": false,
+      "revision": "c9cd41fba9ebd288c4f101e4b99da934bcb96a11"
+    }
+  }
+}

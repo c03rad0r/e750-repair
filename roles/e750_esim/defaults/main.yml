@@ -1,10 +1,13 @@
 ---
 # Pinned on-device lpac stack for the GL-E750 (ath79/nand, mips_24kc).
-# Source: Amperstrand/conwrt issue #619 and ifd-modemifd
-# docs/KNOWN-GOOD-ONDEVICE-PROVISIONING.md.
-e750_esim_artifact_url: >-
-  https://github.com/Amperstrand/lpac-openwrt/releases/download/mips24kc-25.12.5-r1/lpac-25.12.5-ath79-nand-mips.tar.gz
-e750_esim_artifact_sha256: "9b7088e814d0efef8ab56d98b65263aec3199659bff633566e1f1192e24c8e99"
+# Rebuild with tools/lpac-e750-build from Amperstrand/lpac, full source commit:
+# 7be0e679ff695d469064088ed0e69b438292e305
+#
+# The old lpac-openwrt release is gone. Stage the verified builder output at
+# e750_esim_artifact_path before applying this role. An explicitly supplied URL
+# is only an optional transport for that same checksum-verified artifact.
+e750_esim_artifact_url: ""
+e750_esim_artifact_sha256: "f9540aed236736d15889dec443ab3444ec498ff05c26c3bc80faafc2994aa1f0"
 e750_esim_artifact_path: "/tmp/lpac-25.12.5-ath79-nand-mips.tar.gz"
 
 e750_esim_install_dir: "/usr/lib/lpac"

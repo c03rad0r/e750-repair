@@ -20,14 +20,16 @@ activation code, token, unit MAC or bench address belongs here.
 | Item | State |
 |---|---|
 | Host-side SGP.22 chain | Proven on NR7101 / RG502Q-EA (conwrt, ifd-modemifd) |
-| On-device lpac (`LPAC_APDU=at_csim`) | Proven on NR7101; E750 artifact published |
+| On-device lpac (`LPAC_APDU=at_csim`) | Proven on NR7101; pinned E750 bundle built locally, not published upstream |
 | E750 EM060K-GL AT/CSIM behaviour | **Not yet measured on this unit** |
 | E750 MBIM data composition | Measured on this unit (`/dev/cdc-wdm0`) |
 | E750 AT port | Measured at `/dev/ttyUSB3` on 2026-10-29; still **re-detect** |
 | E750 9eSIM profile state | Blank at last inspection; confirm before writing |
 
-The E750 is `ath79/nand`, `mips_24kc`, big-endian. Use the published artifact,
-not the stock OpenWrt `lpac` package.
+The E750 is `ath79/nand`, `mips_24kc`, big-endian. Use the locally rebuilt,
+pinned bundle from `tools/lpac-e750-build/`, not the stock OpenWrt `lpac`
+package or the deleted `Amperstrand/lpac-openwrt` release. Its source is
+`Amperstrand/lpac@7be0e679ff695d469064088ed0e69b438292e305`.
 
 ## The chain
 
@@ -54,12 +56,15 @@ LC_ALL=C.UTF-8 ansible-playbook -i inventory/e750-ssh.yml playbook-e750-esim.yml
 The role:
 
 - refuses to run on a board other than `glinet,gl-e750`;
-- downloads `lpac-25.12.5-ath79-nand-mips.tar.gz` from the pinned release;
-- verifies sha256
-  `9b7088e814d0efef8ab56d98b65263aec3199659bff633566e1f1192e24c8e99`;
+- uses the pre-staged `lpac-25.12.5-ath79-nand-mips.tar.gz` produced by
+  `tools/lpac-e750-build/`; an explicitly configured URL is an optional mirror
+  transport only, not an implicit third-party release;
+- verifies the checksum recorded in `roles/e750_esim/defaults/main.yml` before
+  extraction;
 - extracts to `/usr/lib/lpac` and installs `/usr/bin/lpac`;
-- verifies the `LPAC_APDU_AT_HEX` and `LPAC_HTTP_SSL_VERIFY` fingerprints and
-  the bundled GSMA trust store;
+- verifies the `LPAC_APDU_AT_HEX`, `LPAC_HTTP_SSL_VERIFY`,
+  `LPAC_HTTP_CURL_CAINFO`, and `LPAC_DRIVER_HOME` fingerprints and the bundled
+  GSMA trust store;
 - installs `/usr/bin/e750-esim`.
 
 Uninstall:

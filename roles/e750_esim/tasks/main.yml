@@ -34,17 +34,21 @@
   register: _e750_esim_tools
   changed_when: "'Installing' in _e750_esim_tools.stdout"
 
-- name: Download the pinned lpac bundle
+- name: Stage the pinned lpac bundle
   ansible.builtin.raw: |
     set -e
-    if [ ! -f "{{ e750_esim_artifact_path }}" ]; then
+    if [ ! -s "{{ e750_esim_artifact_path }}" ]; then
+      if [ -z "{{ e750_esim_artifact_url }}" ]; then
+        echo 'no pre-staged lpac bundle; run tools/lpac-e750-build first' >&2
+        exit 2
+      fi
       curl -fL --retry 3 --connect-timeout 15 \
         -o "{{ e750_esim_artifact_path }}.part" \
         "{{ e750_esim_artifact_url }}"
       mv "{{ e750_esim_artifact_path }}.part" "{{ e750_esim_artifact_path }}"
     fi
   register: _e750_esim_download
-  changed_when: "'part' not in _e750_esim_download.stdout"
+  changed_when: false
 
 - name: Verify the artifact sha256
   ansible.builtin.raw: |
@@ -69,7 +73,10 @@
       "{{ e750_esim_install_dir }}/driver/driver_apdu_at_csim.so"
     grep -q 'LPAC_HTTP_SSL_VERIFY' \
       "{{ e750_esim_install_dir }}/driver/driver_http_curl.so"
-    test -f "{{ e750_esim_ca_bundle }}"
+    grep -q 'LPAC_HTTP_CURL_CAINFO' \
+      "{{ e750_esim_install_dir }}/driver/driver_http_curl.so"
+    grep -q 'LPAC_DRIVER_HOME' "{{ e750_esim_bin }}"
+    test -s "{{ e750_esim_ca_bundle }}"
   register: _e750_esim_fingerprints
   changed_when: false
 
