@@ -25,6 +25,9 @@
     if ! command -v curl >/dev/null 2>&1; then
       apk add curl
     fi
+    if ! command -v tar >/dev/null 2>&1; then
+      apk add tar
+    fi
     for t in {{ e750_esim_required_tools | join(' ') }}; do
       command -v "$t" >/dev/null 2>&1 || {
         echo "missing required tool: $t" >&2

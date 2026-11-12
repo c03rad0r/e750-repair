@@ -83,6 +83,11 @@ def _run_stage(command: str, tmp_path: Path, curl_called: Path,
                           text=True, capture_output=True)
 
 
+def test_installer_provisions_tar_on_minimal_openwrt() -> None:
+    tasks = read("roles/e750_esim/tasks/main.yml")
+    assert 'if ! command -v tar >/dev/null 2>&1; then\n      apk add tar' in tasks
+
+
 def test_wrapper_uses_uppercase_at_csim_and_cpin_probe() -> None:
     wrapper = read("roles/e750_esim/templates/e750-esim.sh.j2")
     for needle in (
