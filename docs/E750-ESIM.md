@@ -1,14 +1,14 @@
 # E750 eSIM / silent.link
 
-Status: **on-device stack and host-side activation implemented; hardware
-gate pending on this unit.**
-Bench note 2026-11-04: the E750 still answers ICMP on its management address
-but dropbear/HTTP are closed, so the read-only gate was not run. The GL.iNet
-UI found at `192.168.2.1` is a GL-MT3000, not the E750. The serial console
-prompt answers, but the `BH00DL3M` TX leg is still corrupt (`0/5` clean); the
-known-good `BG046H5F` control is `2/2` clean. Swap the E750 cable to a
-known-good adapter before relying on serial. Re-run the gate when SSH is back;
-do not treat the earlier `ttyUSB3` measurement as permanent.
+Status: **on-device lpac stack installed; modem AT gate still blocked on this unit.**
+Bench note 2026-11-12: the pinned lpac bundle and `e750-esim` wrapper were
+installed through `playbook-e750-esim.yml`, and their on-device checksum and
+AT/curl/GSMA fingerprints were verified through the FIPS management path.
+The modem's USB AT and MBIM nodes enumerate, but the `AT+CPIN?` probe receives
+no answer on any AT node. Therefore no `chip info` or profile list has been
+obtained and no read/write profile operation has been attempted. The live APN
+was not changed. The known-unreliable serial adapter still must not be treated
+as a trusted console without an independent signal-path check.
 
 This document adapts the proven NR7101 process from
 `Amperstrand/conwrt` (`docs/MODEM-AS-READER-PLAYBOOK.md`, issue #619) to the
@@ -21,7 +21,7 @@ activation code, token, unit MAC or bench address belongs here.
 |---|---|
 | Host-side SGP.22 chain | Proven on NR7101 / RG502Q-EA (conwrt, ifd-modemifd) |
 | On-device lpac (`LPAC_APDU=at_csim`) | Proven on NR7101; pinned E750 bundle built locally, not published upstream |
-| E750 EM060K-GL AT/CSIM behaviour | **Not yet measured on this unit** |
+| E750 EM060K-GL AT/CSIM behaviour | No `AT+CPIN?` answer on 2026-11-12; CSIM remains untested |
 | E750 MBIM data composition | Measured on this unit (`/dev/cdc-wdm0`) |
 | E750 AT port | Measured at `/dev/ttyUSB3` on 2026-10-29; still **re-detect** |
 | E750 9eSIM profile state | Blank at last inspection; confirm before writing |
