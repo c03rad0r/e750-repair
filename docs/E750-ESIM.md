@@ -1,14 +1,29 @@
 # E750 eSIM / silent.link
 
-Status: **on-device lpac stack installed; modem AT gate still blocked on this unit.**
+Status: **on-device lpac stack installed and bounded card reads succeeded;
+automatic AT-port probing still blocks rehearsal on this unit.**
 Bench note 2026-11-12: the pinned lpac bundle and `e750-esim` wrapper were
 installed through `playbook-e750-esim.yml`, and their on-device checksum and
 AT/curl/GSMA fingerprints were verified through the FIPS management path.
-The modem's USB AT and MBIM nodes enumerate, but the `AT+CPIN?` probe receives
-no answer on any AT node. Therefore no `chip info` or profile list has been
-obtained and no read/write profile operation has been attempted. The live APN
-was not changed. The known-unreliable serial adapter still must not be treated
-as a trusted console without an independent signal-path check.
+Using the documented explicit-port override, *both* `chip info` and
+`profile list` plus `notification list` returned successfully through lpac's
+bounded AT handling. No card identifiers were committed.
+
+The subsequent automatic detector failed before its CPIN probe could send AT:
+`stty -F /dev/ttyUSB3 115200 raw -echo -crtscts` reports `unable to perform
+all requested operations`. At the time of inspection the active terminal
+speed was 9600 baud. This is a terminal-configuration/port-probe defect, not
+proof that the card or modem is unusable. It is also distinct from the
+intermittent E750 mesh/uplink outage observed while retrying. There has been
+no successful `AT+CPIN?` response from the standalone automatic detector, so
+the orchestrator's required access gate correctly refuses rehearsal.
+
+The live APN remains `internet.eplus.de`; it was not changed. No Speedtest or
+paid profile was written. When the E750 is reachable again, the next step is
+a non-resetting serial-probe correction: compare BusyBox versus GNU stty
+behavior, preserve the modem's working terminal configuration safely, and
+always require a real CPIN/CME response. Do not blindly ignore a failed
+stty invocation, bypass port validation, or use `AT+CFUN=1,1`.
 
 This document adapts the proven NR7101 process from
 `Amperstrand/conwrt` (`docs/MODEM-AS-READER-PLAYBOOK.md`, issue #619) to the
@@ -21,7 +36,7 @@ activation code, token, unit MAC or bench address belongs here.
 |---|---|
 | Host-side SGP.22 chain | Proven on NR7101 / RG502Q-EA (conwrt, ifd-modemifd) |
 | On-device lpac (`LPAC_APDU=at_csim`) | Proven on NR7101; pinned E750 bundle built locally, not published upstream |
-| E750 EM060K-GL AT/CSIM behaviour | No `AT+CPIN?` answer on 2026-11-12; CSIM remains untested |
+| E750 EM060K-GL AT/CSIM behaviour | Bounded lpac `chip info`, `profile list`, and `notification list` succeeded via explicit port on 2026-11-12; automatic CPIN probe still fails at terminal setup |
 | E750 MBIM data composition | Measured on this unit (`/dev/cdc-wdm0`) |
 | E750 AT port | Measured at `/dev/ttyUSB3` on 2026-10-29; still **re-detect** |
 | E750 9eSIM profile state | Blank at last inspection; confirm before writing |
